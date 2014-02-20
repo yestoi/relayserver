@@ -3,7 +3,7 @@
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor
-import pdb
+import pdb, datetime
 
 class Listener(LineReceiver):
 	delimeter = "\n"
@@ -12,13 +12,17 @@ class Listener(LineReceiver):
 		self.hosts = hosts
 		
 	def connectionMade(self):
-		self._peer = self.transport.getPeer().host
-		print "Connected: ", self._peer
-		self.hosts.append(self._peer)
+		host = self.transport.getPeer().host
+		print "Connected: ", host
+
+		for record in self.hosts:
+			if host in record:
+				self.hosts.remove(record)
+		
+		self.hosts.append((host, datetime.datetime.now()))
 
 
 class ListenerFactory(Factory):
-	protocol = Listener
 
 	def __init__(self):
 		self.hosts = []
@@ -26,7 +30,10 @@ class ListenerFactory(Factory):
 	def buildProtocol(self, addr):
 		return Listener(self.hosts)
 
-class Relay(LineReceiver):
+#class Relay(Protocol):
+	
+
+class Control(LineReceiver):
 	delimiter = "\n"
 	
 	def __init__(self, listener):
@@ -36,8 +43,8 @@ class Relay(LineReceiver):
 
 	def connectionMade(self):
 		if self.hosts:
-			for h in self.hosts:
-				self.sendLine(h)
+			for h,d in self.hosts:
+				self.sendLine(str(h) + str(d))
 		else:
 			self.sendLine("No hosts")
 
@@ -49,15 +56,15 @@ class Relay(LineReceiver):
 		if cmd == "quit":
 			self.transport.loseConnection()
 
-class RelayFactory(Factory):
+class ControlFactory(Factory):
 	def __init__(self, listener):
 		self.listener = listener
 
 	def buildProtocol(self, addr):
-		return Relay(self.listener)
+		return Control(self.listener)
 
-lf = ListenerFactory()
-reactor.listenTCP(443, lf)
-reactor.listenTCP(444, RelayFactory(lf))
+listener = ListenerFactory()
+reactor.listenTCP(443, listener)
+reactor.listenTCP(444, ControlFactory(listener))
 reactor.run()
 	
