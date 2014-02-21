@@ -21,11 +21,18 @@ class Listener(LineReceiver):
 		
 		self.hosts.append((host, datetime.datetime.now()))
 
+		#Kill it if nothing is scheduled
+		self.transport.loseConnection()
+
+	def dataReceived(self, data):
+		print data
+
 
 class ListenerFactory(Factory):
 
 	def __init__(self):
 		self.hosts = []
+		self.sched = []
 		
 	def buildProtocol(self, addr):
 		return Listener(self.hosts)
@@ -44,7 +51,7 @@ class Control(LineReceiver):
 	def connectionMade(self):
 		if self.hosts:
 			for h,d in self.hosts:
-				self.sendLine(str(h) + str(d))
+				self.sendLine(str(h))
 		else:
 			self.sendLine("No hosts")
 
