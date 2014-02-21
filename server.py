@@ -2,15 +2,17 @@
 
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineReceiver
-from twisted.internet import reactor
-import pdb, datetime
+from twisted.internet import reactor, protocol
+import pdb, datetime, re
 
 class Listener(LineReceiver):
 	delimeter = "\n"
 	
-	def __init__(self, hosts):
+	def __init__(self, hosts, sched):
 		self.hosts = hosts
-		
+		self.sched = sched
+		self.nc = None
+
 	def connectionMade(self):
 		host = self.transport.getPeer().host
 		print "Connected: ", host
@@ -21,12 +23,36 @@ class Listener(LineReceiver):
 		
 		self.hosts.append((host, datetime.datetime.now()))
 
-		#Kill it if nothing is scheduled
-		self.transport.loseConnection()
+		if self.sched:
+			for shost, target, port in self.sched:
+				if shost == host:
+					cmd = ['/bin/nc', target, port]
+					cwd = '/tmp'
+						
+					self.nc = ProcessProtocol(self)	
+					reactor.spawnProcess(self.nc, cmd[0], cmd, {}, cwd)
+
+		else:		
+			#Kill it if nothing is scheduled
+			self.transport.loseConnection()
 
 	def dataReceived(self, data):
-		print data
+		if self.nc != None:
+			self.nc.transport.write(data)
 
+	#def connectionLost(self, reason):
+		#self.nc.transport.loseConnection()
+
+class ProcessProtocol(protocol.ProcessProtocol):
+	
+	def __init__(self, nc):
+		self.nc = nc
+	
+	def outReceived(self, data):
+		self.nc.transport.write(data)
+
+	def processEnded(self, reason):
+		self.nc.transport.loseConnection()
 
 class ListenerFactory(Factory):
 
@@ -35,11 +61,9 @@ class ListenerFactory(Factory):
 		self.sched = []
 		
 	def buildProtocol(self, addr):
-		return Listener(self.hosts)
+		return Listener(self.hosts, self.sched)
 
-#class Relay(Protocol):
 	
-
 class Control(LineReceiver):
 	delimiter = "\n"
 	
@@ -48,12 +72,7 @@ class Control(LineReceiver):
 		self.hosts = listener.hosts
 		self.state = "MENU"
 
-	def connectionMade(self):
-		if self.hosts:
-			for h,d in self.hosts:
-				self.sendLine(str(h))
-		else:
-			self.sendLine("No hosts")
+#	def connectionMade(self):
 
 	def lineReceived(self, line):
 		if self.state == "MENU":
@@ -62,6 +81,14 @@ class Control(LineReceiver):
 	def handle_menu(self, cmd):
 		if cmd == "quit":
 			self.transport.loseConnection()
+		if re.match(r'list', cmd):
+			self.hosts = listener.hosts
+			if self.hosts:
+				for h,d in self.hosts:
+					self.sendLine(str(h) + " " + str(d))
+		if re.match(r'add ', cmd):
+			c, host, target, port = re.split(r' ', cmd)
+			listener.sched.append([host, target, port])	
 
 class ControlFactory(Factory):
 	def __init__(self, listener):
