@@ -4,6 +4,7 @@ from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor, protocol
 import pdb, datetime, re
+import urwid
 
 class Listener(LineReceiver):
 	delimeter = "\n"
@@ -72,23 +73,43 @@ class Control(LineReceiver):
 		self.hosts = listener.hosts
 		self.state = "MENU"
 
-#	def connectionMade(self):
+	def connectionMade(self):
+		self.sendLine("--- Super Cool Relay Server v0.1 ---\n\nCommands:\nshow - Show last connections\nlist - List scheduled relays\nadd - Add relay (ex. add <host> <target> <port>)\ndel - Delete relay(s) (ex. del <target> or del all)\nclean - Clear out last connections cache\n")
 
 	def lineReceived(self, line):
 		if self.state == "MENU":
 			self.handle_menu(line)
 
 	def handle_menu(self, cmd):
-		if cmd == "quit":
+		if re.match(r'quit', cmd):
 			self.transport.loseConnection()
-		if re.match(r'list', cmd):
+
+		if re.match(r'clean', cmd):
+			listener.hosts = []
+
+		if re.match(r'show', cmd):
 			self.hosts = listener.hosts
 			if self.hosts:
 				for h,d in self.hosts:
-					self.sendLine(str(h) + " " + str(d))
+					self.sendLine(str(h) + "     -- " + d.strftime("%I:%M%p"))
+			else:
+				self.sendLine("No connections")
+
 		if re.match(r'add ', cmd):
 			c, host, target, port = re.split(r' ', cmd)
 			listener.sched.append([host, target, port])	
+
+		if re.match(r'del ', cmd):
+			c, host = re.split(r' ', cmd)
+			for record in listener.sched:
+				if host in record:
+					listener.sched.remove(record)
+			
+		if re.match(r'list', cmd):
+			if listener.sched:
+				for host, target, port in listener.sched:
+					self.sendLine(host + " will be relayed to " + target + " on port " + port)
+					
 
 class ControlFactory(Factory):
 	def __init__(self, listener):
