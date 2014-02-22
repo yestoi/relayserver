@@ -119,6 +119,8 @@ class Control(LineReceiver):
 
 		if re.match(r'help', cmd):
 			self.sendLine(self.help)	
+		
+		self.sendLine("") #newline after every input. Easier to read
 
 class ControlFactory(Factory):
 	def __init__(self, listener):
