@@ -36,7 +36,8 @@ class Listener(LineReceiver):
 					self.conn.append([host, target, port])
 					self.nc = ProcessProtocol(self)	
 					reactor.spawnProcess(self.nc, cmd[0], cmd, {}, cwd)
-					
+			if self.nc == None:
+				self.transport.loseConnection()
 		else:		
 			#Kill it if nothing is scheduled
 			self.transport.loseConnection()
@@ -47,7 +48,6 @@ class Listener(LineReceiver):
 
 	def connectionLost(self, reason):
 		if self.nc != None:
-			
 			self.nc.transport.loseConnection()
 
 class ProcessProtocol(protocol.ProcessProtocol):
