@@ -38,6 +38,7 @@ class Listener(LineReceiver):
 					reactor.spawnProcess(self.nc, cmd[0], cmd, {}, cwd)
 			if self.nc == None:
 				self.transport.loseConnection()
+		# else if self.jobs <- IMPLEMENT
 		else:		
 			#Kill it if nothing is scheduled
 			self.transport.loseConnection()
@@ -65,6 +66,7 @@ class ProcessProtocol(protocol.ProcessProtocol):
 					self.nc.conn.remove(record)
 
 		self.nc.transport.loseConnection()
+
 class ListenerFactory(Factory):
 
 	def __init__(self):
@@ -74,7 +76,6 @@ class ListenerFactory(Factory):
 		
 	def buildProtocol(self, addr):
 		return Listener(self.hosts, self.sched, self.conn)
-
 
 class Control(LineReceiver):
 	delimiter = "\n"
