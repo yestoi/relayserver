@@ -11,9 +11,10 @@ NETCAT = '/bin/nc'
 
 class Listener(LineReceiver):
 	
-	def __init__(self, hosts, sched):
+	def __init__(self, hosts, sched, conn):
 		self.hosts = hosts
 		self.sched = sched
+		self.conn = conn
 		self.nc = None
 
 	def connectionMade(self):
@@ -32,8 +33,10 @@ class Listener(LineReceiver):
 					cmd = [NETCAT, target, port]
 					cwd = '/tmp'
 						
+					self.conn.append([host, target, port])
 					self.nc = ProcessProtocol(self)	
 					reactor.spawnProcess(self.nc, cmd[0], cmd, {}, cwd)
+					
 		else:		
 			#Kill it if nothing is scheduled
 			self.transport.loseConnection()
@@ -44,6 +47,7 @@ class Listener(LineReceiver):
 
 	def connectionLost(self, reason):
 		if self.nc != None:
+			
 			self.nc.transport.loseConnection()
 
 class ProcessProtocol(protocol.ProcessProtocol):
@@ -55,16 +59,21 @@ class ProcessProtocol(protocol.ProcessProtocol):
 		self.nc.transport.write(data)
 
 	def processEnded(self, reason):
-		self.nc.transport.loseConnection()
+		if self.nc.conn:
+			for record in self.nc.conn:
+				if self.nc.transport.getPeer().host in record:
+					self.nc.conn.remove(record)
 
+		self.nc.transport.loseConnection()
 class ListenerFactory(Factory):
 
 	def __init__(self):
 		self.hosts = []
 		self.sched = []
+		self.conn = []
 		
 	def buildProtocol(self, addr):
-		return Listener(self.hosts, self.sched)
+		return Listener(self.hosts, self.sched, self.conn)
 
 
 class Control(LineReceiver):
@@ -116,6 +125,10 @@ class Control(LineReceiver):
 			if listener.sched:
 				for host, target, port in listener.sched:
 					self.sendLine(host + " will be relayed to " + target + " on port " + port)
+			if listener.conn:
+				self.sendLine("\n--- Connections ---")
+				for host, target, port in listener.conn:
+					self.sendLine(host + " --> " + target + ":" + port)
 
 		if re.match(r'help', cmd):
 			self.sendLine(self.help)	
