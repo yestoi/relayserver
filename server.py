@@ -40,22 +40,23 @@ class Listener(LineReceiver):
 					self.nc = ProcessProtocol(self)	
 					reactor.spawnProcess(self.nc, cmd[0], cmd, {}, cwd)
 
-		elif self.jobs:
+		if self.jobs:
 			for shost, job, p, c in self.jobs:
 				if shost == host:
 					self.job = 1
 
-		elif not self.job and not self.nc:
+		if not self.job and not self.nc:
 			self.transport.loseConnection()
 
-		else:		
-			self.transport.loseConnection()
 
 	def dataReceived(self, data):
 		if self.nc != None:
 			self.nc.transport.write(data)
 
 		if self.jobs:
+			for host, target, port in self.conn:
+				if host == self.transport.getPeer().host:
+					return
 			for job in self.jobs:
 				shost, filename, prompt, count = job
 				if shost == self.transport.getPeer().host:
@@ -72,6 +73,9 @@ class Listener(LineReceiver):
 	def connectionLost(self, reason):
 		if self.nc != None:
 			self.nc.transport.loseConnection()
+			for record in self.conn:
+				if self.transport.getPeer().host in record:
+					self.conn.remove(record)
 
 class ProcessProtocol(protocol.ProcessProtocol):
 	
@@ -179,7 +183,7 @@ class Control(LineReceiver):
 					if count == None:
 						self.sendLine(host + " --> " + job)
 					else:
-						self.sendLine(host + " --> " + job + " '" + count + "' more times")
+						self.sendLine(host + " --> " + job + " '" + str(count) + "' more times")
 
 		if re.match(r'help', cmd):
 			self.sendLine(self.help)	
