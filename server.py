@@ -79,9 +79,6 @@ class Listener(LineReceiver):
 	def connectionLost(self, reason):
 		if self.nc != None:
 			self.nc.transport.loseConnection()
-			for record in self.conn:
-				if self.transport.getPeer().host in record:
-					self.conn.remove(record)
 
 class ProcessProtocol(protocol.ProcessProtocol):
 	
@@ -94,7 +91,7 @@ class ProcessProtocol(protocol.ProcessProtocol):
 	def processEnded(self, reason):
 		if self.nc.conn:
 			for record in self.nc.conn:
-				if self.nc.transport.getPeer().host in record:
+				if self.nc.transport.getPeer().host == record[0]:
 					self.nc.conn.remove(record)
 
 		self.nc.transport.loseConnection()
