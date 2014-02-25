@@ -31,7 +31,8 @@ class Listener(LineReceiver):
 		self.hosts.append((host, datetime.datetime.now()))
 
 		if self.sched:
-			for shost, target, port in self.sched:
+			for record in self.sched:
+				shost, target, port, count = record
 				if shost == host:
 					cmd = [NETCAT, target, port]
 					cwd = '/tmp'
@@ -39,6 +40,11 @@ class Listener(LineReceiver):
 					self.conn.append([host, target, port])
 					self.nc = ProcessProtocol(self)	
 					reactor.spawnProcess(self.nc, cmd[0], cmd, {}, cwd)
+	
+					if count == 1:
+						self.sched.remove(record)
+					if count >= 1:
+						record[3] -= 1
 
 		if self.jobs:
 			for shost, job, p, c in self.jobs:
@@ -47,7 +53,6 @@ class Listener(LineReceiver):
 
 		if not self.job and not self.nc:
 			self.transport.loseConnection()
-
 
 	def dataReceived(self, data):
 		if self.nc != None:
@@ -68,7 +73,7 @@ class Listener(LineReceiver):
 						if count == 1:
 							self.jobs.remove(job)
 						if count > 1:
-							count -= 1
+							job[3] -= 1
 								
 	def connectionLost(self, reason):
 		if self.nc != None:
@@ -111,7 +116,7 @@ class Control(LineReceiver):
 		self.hosts = listener.hosts
 		self.state = "MENU"
 		self.name = "--- Super Cool Relay Server v0.1 ---\n\n"
-		self.help = "show  - Show last connections\nlist  - List scheduled relays, active relays, and jobs\nadd   - Add relay (ex. add <host> <target> <port>)\n        Add job (ex. add <host> <job> (<times to run> default forever))\ndel   - Delete relay(s) (ex. del <target> or del all)\n        Delete job (ex. del <target> <job>)\nclean - Clear out last connections cache"
+		self.help = "show  - Show last connections\nlist  - List scheduled relays, active relays, and jobs\nadd   - Add relay (ex. add <host> <target> <port> (<times to run> default is forever)\n        Add job (ex. add <host> <job> (<times to run> default is forever))\ndel   - Delete relay(s) (ex. del <target> or del all)\n        Delete job (ex. del <target> <job>)\nclean - Clear out last connections cache"
 
 	def connectionMade(self):
 		self.sendLine(self.name + "(type help for commands)")
@@ -137,17 +142,27 @@ class Control(LineReceiver):
 
 		if re.match(r'add ', cmd):
 			ipregex = r'([0-9]{1,3}\.){3}[0-9]{1,3}'
-			if len(cmd.split()) == 4:
-				c, host, target, port = cmd.split()
+			args = len(cmd.split())
+			count = 0 # Default. Forever
+
+			if args == 4 or args == 5:
+				if args == 5:
+					c, host, target, port, count = cmd.split()
+				else:
+					c, host, target, port = cmd.split()
+
+				#schedule relay
 				if re.match(ipregex, host) and re.match(ipregex, target) and re.match(r'[0-9]{1,5}', port):
-					listener.sched.append([host, target, port])	
+					listener.sched.append([host, target, port, int(count)])	
+
+				#schedule job
 				elif re.match(ipregex,host) and re.match(r'[a-zA-Z0-9]+', target):
 					if re.match(r'[0-9]{1,}', port):
 						listener.jobs.append([host, target, PROMPT, int(port)]) #host, job, prompt, count
 					else:
 						listener.jobs.append([host, target, port, None]) #host, job, prompt
 
-			if len(cmd.split()) == 3:
+			if args == 3:
 				c, host, job = cmd.split()
 				if re.match(ipregex, host) and re.match(r'[a-zA-Z0-9]+', job):
 					listener.jobs.append([host, job, PROMPT, None])
@@ -170,8 +185,11 @@ class Control(LineReceiver):
 		if re.match(r'list', cmd):
 			if listener.sched:
 				self.sendLine("--- Relays ---")
-				for host, target, port in listener.sched:
-					self.sendLine(host + " will be relayed to " + target + " on port " + port)
+				for host, target, port, count in listener.sched:
+					if count == 0:
+						self.sendLine(host + " will be relayed to " + target + " on port " + port)
+					else:
+						self.sendLine(host + " will be relayed to " + target + " on port " + port + " " + str(count) + " more times")
 			if listener.conn:
 				self.sendLine("\n--- Connections ---")
 				for host, target, port in listener.conn:
