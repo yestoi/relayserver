@@ -61,11 +61,12 @@ class Listener(LineReceiver):
 		if self.jobs:
 			for host, target, port in self.conn:
 				if host == self.transport.getPeer().host:
-					return
+					return # Don't muck with established connections. Better way to do this? Probably
 			for job in self.jobs:
 				shost, filename, prompt, count = job
 				if shost == self.transport.getPeer().host:
 					if re.search(prompt, data):
+						# Found prompt. Lets start sending our job over.
 						with open(os.getcwd() + "/jobs/" + filename) as jobfile:
 							for line in jobfile.readlines():
 								self.sendLine(line)
