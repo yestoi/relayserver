@@ -111,7 +111,7 @@ class Control(LineReceiver):
 		self.hosts = listener.hosts
 		self.state = "MENU"
 		self.name = "--- Super Cool Relay Server v0.1 ---\n\n"
-		self.help = "show - Show last connections\nlist - List scheduled relays, active relays, and jobs\nadd - Add relay (ex. add <host> <target> <port>)\n      Add job (ex. add <host> <job> (<times to run> default forever))\ndel - Delete relay(s) (ex. del <target> or del all)\n      Delete job (ex. del <target> <job>)\nclean - Clear out last connections cache"
+		self.help = "show  - Show last connections\nlist  - List scheduled relays, active relays, and jobs\nadd   - Add relay (ex. add <host> <target> <port>)\n        Add job (ex. add <host> <job> (<times to run> default forever))\ndel   - Delete relay(s) (ex. del <target> or del all)\n        Delete job (ex. del <target> <job>)\nclean - Clear out last connections cache"
 
 	def connectionMade(self):
 		self.sendLine(self.name + "(type help for commands)")
