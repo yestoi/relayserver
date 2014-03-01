@@ -2,7 +2,7 @@
 
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineReceiver
-from twisted.internet import reactor, protocol
+from twisted.internet import reactor, protocol, defer
 import pdb, datetime, re, os
 
 LISTEN_PORT = 443 # Your callbacks should be sent here
@@ -67,6 +67,8 @@ class Listener(LineReceiver):
 				if shost == self.transport.getPeer().host:
 					if re.search(prompt, data):
 						# Found prompt. Lets start sending our job over.
+					    	d = defer.Deferred()
+					    	reactor.callLater(3, d.callback, None)
 						with open(os.getcwd() + "/jobs/" + filename) as jobfile:
 							for line in jobfile.readlines():
 								self.sendLine(line)
