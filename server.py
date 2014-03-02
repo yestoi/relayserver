@@ -67,8 +67,6 @@ class Listener(LineReceiver):
 				if shost == self.transport.getPeer().host:
 					if re.search(prompt, data):
 						# Found prompt. Lets start sending our job over.
-					    	d = defer.Deferred()
-					    	reactor.callLater(3, d.callback, None)
 						with open(os.getcwd() + "/jobs/" + filename) as jobfile:
 							for line in jobfile.readlines():
 								self.sendLine(line)
