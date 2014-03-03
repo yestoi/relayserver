@@ -13,10 +13,10 @@ PROMPT = r'# $' #default shell prompt
 class Listener(LineReceiver):
 	
 	def __init__(self, hosts, sched, conn, jobs):
-		self.hosts = hosts
-		self.sched = sched
-		self.conn = conn
-		self.jobs = jobs
+		self.hosts = hosts 	# List of called in hosts
+		self.sched = sched	# List of scheduled relays
+		self.conn = conn 	# List of established relays
+		self.jobs = jobs	# List of scheduled jobs
 		self.nc = None
 		self.job = None
 
@@ -24,11 +24,11 @@ class Listener(LineReceiver):
 		host = self.transport.getPeer().host
 		print "Connected: ", host
 
-		for record in self.hosts:
+		for record in self.hosts: # Remove old record of last call-in if this one is new
 			if host in record:
 				self.hosts.remove(record)
 		
-		self.hosts.append((host, datetime.datetime.now()))
+		self.hosts.append((host, datetime.datetime.now())) # Add record of call-in with ip and time
 
 		if self.sched:
 			for record in self.sched:
@@ -65,8 +65,7 @@ class Listener(LineReceiver):
 			for job in self.jobs:
 				shost, filename, prompt, count = job
 				if shost == self.transport.getPeer().host:
-					if re.search(prompt, data):
-						# Found prompt. Lets start sending our job over.
+					if re.search(prompt, data): # Found prompt. Lets start sending our job over.
 						with open(os.getcwd() + "/jobs/" + filename) as jobfile:
 							for line in jobfile.readlines():
 								self.sendLine(line)
@@ -164,6 +163,9 @@ class Control(LineReceiver):
 				c, host, job = cmd.split()
 				if re.match(ipregex, host) and re.match(r'[a-zA-Z0-9]+', job):
 					listener.jobs.append([host, job, PROMPT, None])
+				if re.match(r'all', host) and re.match(r'[a-zA-Z0-9]+', job):
+					for h, time in listener.hosts:
+						listener.jobs.append([h, job, PROMPT, None])
 
 		if re.match(r'del ', cmd):
 			if len(cmd.split()) == 3:
@@ -171,10 +173,16 @@ class Control(LineReceiver):
 				for record in listener.jobs:
 					if host and job in record:
 						listener.jobs.remove(record)
+				if re.match(r'all', host) and re.match(r'^j', job):
+					listener.jobs = []
 			if len(cmd.split()) == 2:
 				c, host = cmd.split()
 				if re.match(r'all', host):
 					listener.sched = []	
+				elif re.match(r'[a-zA-Z0-9]+', host):
+					for record in listener.jobs:
+						if host in record:
+							listener.jobs.remove(record)
 				else:
 					for record in listener.sched:
 						if host in record:
