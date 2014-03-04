@@ -5,7 +5,7 @@ from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor, protocol, defer
 import pdb, datetime, re, os
 
-LISTEN_PORT = 443 # Your callbacks should be sent here
+LISTEN_PORT = 4444 # Your callbacks should be sent here
 COMMAND_PORT = 444 # Port to interact with server
 NETCAT = '/bin/nc' 
 PROMPT = r'# $' #default shell prompt
@@ -154,10 +154,14 @@ class Control(LineReceiver):
 
 				#schedule job
 				elif re.match(ipregex,host) and re.match(r'[a-zA-Z0-9]+', target):
-					if re.match(r'[0-9]{1,}', port):
+					if re.match(r'[0-9]+', port):
 						listener.jobs.append([host, target, PROMPT, int(port)]) #host, job, prompt, count
 					else:
 						listener.jobs.append([host, target, port, None]) #host, job, prompt
+				
+				elif re.match(r'all', host) and re.match(r'[a-zA-Z0-9]+', target) and re.match(r'[0-9]+', port):
+					for h, time in listener.hosts:
+						listener.jobs.append([h, job, PORMPT, int(port)])
 
 			if args == 3:
 				c, host, job = cmd.split()
