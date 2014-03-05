@@ -5,7 +5,7 @@ from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor, protocol, defer
 import pdb, datetime, re, os
 
-LISTEN_PORT = 4444 # Your callbacks should be sent here
+LISTEN_PORT = 443 # Your callbacks should be sent here
 COMMAND_PORT = 444 # Port to interact with server
 NETCAT = '/bin/nc' 
 PROMPT = r'# $' #default shell prompt
@@ -69,11 +69,15 @@ class Listener(LineReceiver):
 						with open(os.getcwd() + "/jobs/" + filename) as jobfile:
 							for line in jobfile.readlines():
 								self.sendLine(line)
+						print "Completed " + filename
 						self.transport.loseConnection()
 						if count == 1:
 							self.jobs.remove(job)
 						if count > 1:
 							job[3] -= 1
+
+					else:
+						self.transport.loseConnection()
 								
 	def connectionLost(self, reason):
 		if self.nc != None:
@@ -113,7 +117,7 @@ class Control(LineReceiver):
 		self.hosts = listener.hosts
 		self.state = "MENU"
 		self.name = "--- Super Cool Relay Server v0.1 ---\n\n"
-		self.help = "show  - Show last connections\nlist  - List scheduled relays, active relays, and jobs\nadd   - Add relay (ex. add <host> <target> <port> (<times to run> default is forever)\n        Add job (ex. add <host> <job> (<times to run> default is forever))\ndel   - Delete relay(s) (ex. del <target> or del all)\n        Delete job (ex. del <target> <job>)\nclean - Clear out last connections cache"
+		self.help = "show  - Show last connections\nlist  - List scheduled relays, active relays, and jobs\nadd   - Add relay (ex. add <host> <target> <port> (<times to run> default is forever)\n        Add job (ex. add <host or all> <job> (<times to run> default is forever))\ndel   - Delete relay(s) (ex. del <target> or del all)\n        Delete job (ex. del <target or all> <job>)\nclean - Clear out last connections cache"
 
 	def connectionMade(self):
 		self.sendLine(self.name + "(type help for commands)")
@@ -157,7 +161,7 @@ class Control(LineReceiver):
 					if re.match(r'[0-9]+', port):
 						listener.jobs.append([host, target, PROMPT, int(port)]) #host, job, prompt, count
 					else:
-						listener.jobs.append([host, target, port, None]) #host, job, prompt
+						listener.jobs.append([host, target, port, None]) #host, job, prompt, default count
 				
 				elif re.match(r'all', host) and re.match(r'[a-zA-Z0-9]+', target) and re.match(r'[0-9]+', port):
 					for h, time in listener.hosts:
