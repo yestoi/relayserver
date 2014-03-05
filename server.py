@@ -75,9 +75,6 @@ class Listener(LineReceiver):
 							self.jobs.remove(job)
 						if count > 1:
 							job[3] -= 1
-
-					else:
-						self.transport.loseConnection()
 								
 	def connectionLost(self, reason):
 		if self.nc != None:
