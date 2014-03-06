@@ -5,14 +5,19 @@ Listener to listener relay server
 
 ```
 $ nc localhost 444
---- Super Cool Relay Server v0.1 ---
+--- Red Team Relay Server v0.2 ---
+Listening on Port: 443
 
-Commands:
-show - Show last connections
-list - List scheduled relays
-add - Add relay (ex. add <host> <target> <port>)
-del - Delete relay(s) (ex. del <target> or del all)
+(type help for commands)
+help
+show  - Show last connections
+list  - List scheduled relays, active relays, and jobs
+add   - Add relay (ex. add <host> <target> <port> (<times to run> default is forever)
+        Add job (ex. add <host or all> <job> (<times to run> default is forever))
+del   - Delete relay(s) (ex. del <target> or del all)
+        Delete job (ex. del <target or all> <job>)
 clean - Clear out last connections cache
+jobs  - Show available jobs. Specifiy a job name to view the job
 
 show
 192.168.1.20     -- 05:55PM

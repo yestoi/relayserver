@@ -114,7 +114,7 @@ class Control(LineReceiver):
 	def __init__(self, listener):
 		self.hosts = listener.hosts
 		self.state = "MENU"
-		self.name = "--- Red Team Relay Server v0.2 ---\n\n"
+		self.name = "--- Red Team Relay Server v0.2 ---\nListening on Port: " + str(LISTEN_PORT) + "\n\n"
 		self.help = "show  - Show last connections\nlist  - List scheduled relays, active relays, and jobs\nadd   - Add relay (ex. add <host> <target> <port> (<times to run> default is forever)\n        Add job (ex. add <host or all> <job> (<times to run> default is forever))\ndel   - Delete relay(s) (ex. del <target> or del all)\n        Delete job (ex. del <target or all> <job>)\nclean - Clear out last connections cache\njobs  - Show available jobs. Specifiy a job name to view the job"
 
 	def connectionMade(self):
