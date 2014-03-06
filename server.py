@@ -3,6 +3,7 @@
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor, protocol, defer
+from os.path import isfile, join
 import pdb, datetime, re, os
 
 LISTEN_PORT = 443 # Your callbacks should be sent here
@@ -113,8 +114,8 @@ class Control(LineReceiver):
 	def __init__(self, listener):
 		self.hosts = listener.hosts
 		self.state = "MENU"
-		self.name = "--- Super Cool Relay Server v0.1 ---\n\n"
-		self.help = "show  - Show last connections\nlist  - List scheduled relays, active relays, and jobs\nadd   - Add relay (ex. add <host> <target> <port> (<times to run> default is forever)\n        Add job (ex. add <host or all> <job> (<times to run> default is forever))\ndel   - Delete relay(s) (ex. del <target> or del all)\n        Delete job (ex. del <target or all> <job>)\nclean - Clear out last connections cache"
+		self.name = "--- Red Team Relay Server v0.2 ---\n\n"
+		self.help = "show  - Show last connections\nlist  - List scheduled relays, active relays, and jobs\nadd   - Add relay (ex. add <host> <target> <port> (<times to run> default is forever)\n        Add job (ex. add <host or all> <job> (<times to run> default is forever))\ndel   - Delete relay(s) (ex. del <target> or del all)\n        Delete job (ex. del <target or all> <job>)\nclean - Clear out last connections cache\njobs  - Show available jobs. Specifiy a job name to view the job"
 
 	def connectionMade(self):
 		self.sendLine(self.name + "(type help for commands)")
@@ -124,13 +125,13 @@ class Control(LineReceiver):
 			self.handle_menu(line)
 
 	def handle_menu(self, cmd):
-		if re.match(r'quit|exit', cmd):
+		if re.match(r'^(quit|exit)', cmd):
 			self.transport.loseConnection()
 
-		if re.match(r'clean', cmd):
+		if re.match(r'^clean', cmd):
 			listener.hosts = []
 
-		if re.match(r'show', cmd):
+		if re.match(r'^show', cmd):
 			self.hosts = listener.hosts
 			if self.hosts:
 				for h,d in self.hosts:
@@ -138,7 +139,7 @@ class Control(LineReceiver):
 			else:
 				self.sendLine("No connections")
 
-		if re.match(r'add ', cmd):
+		if re.match(r'^add ', cmd):
 			ipregex = r'([0-9]{1,3}\.){3}[0-9]{1,3}'
 			args = len(cmd.split())
 			count = 0 # Default. Forever
@@ -172,7 +173,7 @@ class Control(LineReceiver):
 					for h, time in listener.hosts:
 						listener.jobs.append([h, job, PROMPT, None])
 
-		if re.match(r'del ', cmd):
+		if re.match(r'^del ', cmd):
 			if len(cmd.split()) == 3:
 				c, host, job = cmd.split()
 				for record in listener.jobs:
@@ -193,7 +194,7 @@ class Control(LineReceiver):
 						if host in record:
 							listener.sched.remove(record)
 			
-		if re.match(r'list', cmd):
+		if re.match(r'^list', cmd):
 			if listener.sched:
 				self.sendLine("--- Relays ---")
 				for host, target, port, count in listener.sched:
@@ -214,6 +215,19 @@ class Control(LineReceiver):
 					else:
 						self.sendLine(host + " --> " + job + " '" + str(count) + "' more times")
 
+		if re.match(r'^job', cmd):
+			path = os.getcwd() + "/jobs/"
+			if len(cmd.split()) == 2:
+				c, filename = cmd.split()
+				with open(path + filename) as jobfile:
+					for line in jobfile.readlines():
+						self.sendLine(line)
+			else:
+				jobs = [ f for f in os.listdir(path) if isfile(join(path,f)) ]
+				for j in jobs:
+					self.sendLine(j)
+				
+				
 		if re.match(r'help', cmd):
 			self.sendLine(self.help)	
 		
