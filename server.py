@@ -4,7 +4,7 @@ from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor, protocol, defer
 from os.path import isfile, join
-import pdb, datetime, re, os
+import pdb, datetime, re, os, stat
 
 LISTEN_PORT = 443 # Your callbacks should be sent here
 COMMAND_PORT = 444 # Port to interact with server
@@ -121,6 +121,7 @@ class Control(LineReceiver):
 	
 	def __init__(self, listener):
 		self.hosts = listener.hosts
+		self.tapfile = None
 		self.state = "MENU"
 		self.name = "--- Red Team Relay Server v0.3 ---\nListening on Port: " + str(LISTEN_PORT) + "\n\n"
 		self.help = "show  - Show last connections\nlist  - List scheduled relays, active relays, and jobs\nadd   - Add relay (ex. add <host> <target> <port> (<times to run> default is forever)\n        Add job (ex. add <host or all> <job> (<times to run> default is forever))\ndel   - Delete relay(s) (ex. del <target> or del all)\n        Delete job (ex. del <target or all> <job>)\nclean - Clear out last connections cache\njobs  - Show available jobs. Specifiy a job name to view the job"
@@ -131,7 +132,9 @@ class Control(LineReceiver):
 	def lineReceived(self, line):
 		if self.state == "MENU":
 			self.handle_menu(line)
-
+		if self.state == "TAP":
+			self.state = "MENU"
+			
 	def handle_menu(self, cmd):
 		if re.match(r'^(quit|exit)', cmd):
 			self.transport.loseConnection()
@@ -235,10 +238,39 @@ class Control(LineReceiver):
 				for j in jobs:
 					self.sendLine(j)
 				
+		if re.match(r'^tap', cmd):
+			if len(cmd.split()) == 2:
+				for i, (host, target, port) in enumerate(listener.conn):
+					if i == int(cmd.split()[1]):
+						print "OPENING SESSION"
+						session = os.getcwd() + "/sessions/" + host + "--" + target
+						self.tailfile(session, self.sendLine)
+			else:
+				for i, (host, target, port) in enumerate(listener.conn):
+					self.sendLine(str(i) + ": " + host + " --> " + target + ":" + port)
+				
 		if re.match(r'help', cmd):
 			self.sendLine(self.help)	
 		
 		self.sendLine("") #newline after every input. Easier to read
+			
+	def file_identity(self, struct_stat):
+		return struct_stat[stat.ST_DEV], struct_stat[stat.ST_INO]
+
+	def tailfile(self, filename, callback, freq=1, fileobj=None, fstat=None):
+	    	if fileobj is None:
+			fileobj = open(filename)
+			fileobj.seek(0, 2)
+		line = fileobj.read()
+		if line: callback(line)
+	    	if fstat is None: fstat = os.fstat(fileobj.fileno())
+	    	try: stat = os.stat(filename)
+	    	except: stat = fstat
+	    	if self.file_identity(stat) != self.file_identity(fstat):
+			fileobj = open(filename)
+			fstat = os.fstat(fileobj.fileno())
+		if self.state == "TAP":
+			reactor.callLater(freq, lambda: self.tailfile(filename, callback, freq, fileobj, fstat))	
 
 class ControlFactory(Factory):
 	def __init__(self, listener):
