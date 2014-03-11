@@ -39,7 +39,7 @@ class Listener(LineReceiver):
 					cwd = '/tmp'
 						
 					self.conn.append([host, target, port])
-					self.nc = ProcessProtocol(self)	
+					self.nc = ProcessProtocol(self, [host, target])	
 					reactor.spawnProcess(self.nc, cmd[0], cmd, {}, cwd)
 	
 					if count == 1:
@@ -58,6 +58,8 @@ class Listener(LineReceiver):
 	def dataReceived(self, data):
 		if self.nc != None:
 			self.nc.transport.write(data)
+			self.nc.log.write(data)
+			self.nc.log.flush()
 
 		if self.jobs:
 			for host, target, port in self.conn:
@@ -80,14 +82,19 @@ class Listener(LineReceiver):
 	def connectionLost(self, reason):
 		if self.nc != None:
 			self.nc.transport.loseConnection()
+			self.nc.log.close()
 
 class ProcessProtocol(protocol.ProcessProtocol):
 	
-	def __init__(self, nc):
+	def __init__(self, nc, conn):
 		self.nc = nc
-	
+		host, target = conn
+		self.log = open(os.getcwd() + "/sessions/" + host + "--" + target, "a") 
+			
 	def outReceived(self, data):
 		self.nc.transport.write(data)
+		self.log.write(data)
+		self.log.flush()
 
 	def processEnded(self, reason):
 		if self.nc.conn:
@@ -96,6 +103,7 @@ class ProcessProtocol(protocol.ProcessProtocol):
 					self.nc.conn.remove(record)
 
 		self.nc.transport.loseConnection()
+		self.log.close()
 
 class ListenerFactory(Factory):
 
@@ -114,7 +122,7 @@ class Control(LineReceiver):
 	def __init__(self, listener):
 		self.hosts = listener.hosts
 		self.state = "MENU"
-		self.name = "--- Red Team Relay Server v0.2 ---\nListening on Port: " + str(LISTEN_PORT) + "\n\n"
+		self.name = "--- Red Team Relay Server v0.3 ---\nListening on Port: " + str(LISTEN_PORT) + "\n\n"
 		self.help = "show  - Show last connections\nlist  - List scheduled relays, active relays, and jobs\nadd   - Add relay (ex. add <host> <target> <port> (<times to run> default is forever)\n        Add job (ex. add <host or all> <job> (<times to run> default is forever))\ndel   - Delete relay(s) (ex. del <target> or del all)\n        Delete job (ex. del <target or all> <job>)\nclean - Clear out last connections cache\njobs  - Show available jobs. Specifiy a job name to view the job"
 
 	def connectionMade(self):
@@ -226,7 +234,6 @@ class Control(LineReceiver):
 				jobs = [ f for f in os.listdir(path) if isfile(join(path,f)) ]
 				for j in jobs:
 					self.sendLine(j)
-				
 				
 		if re.match(r'help', cmd):
 			self.sendLine(self.help)	
