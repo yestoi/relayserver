@@ -58,7 +58,7 @@ class Listener(LineReceiver):
 	def dataReceived(self, data):
 		if self.nc != None:
 			self.nc.transport.write(data)
-			self.nc.log.write(data)
+			self.nc.log.write(data) #TODO Handle exceptions here
 			self.nc.log.flush()
 
 		if self.jobs:
@@ -133,7 +133,8 @@ class Control(LineReceiver):
 		if self.state == "MENU":
 			self.handle_menu(line)
 		if self.state == "TAP":
-			self.state = "MENU"
+			if re.match(r'^q', line):
+				self.state = "MENU"
 			
 	def handle_menu(self, cmd):
 		if re.match(r'^(quit|exit)', cmd):
@@ -243,6 +244,7 @@ class Control(LineReceiver):
 				for i, (host, target, port) in enumerate(listener.conn):
 					if i == int(cmd.split()[1]):
 						print "OPENING SESSION"
+						self.state = "TAP"
 						session = os.getcwd() + "/sessions/" + host + "--" + target
 						self.tailfile(session, self.sendLine)
 			else:
