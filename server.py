@@ -145,6 +145,7 @@ class Control(LineReceiver):
 		if re.match(r'^c', cmd):
 			listener.hosts = []
 
+		# Show last connections
 		if re.match(r'^s', cmd):
 			self.hosts = listener.hosts
 			if self.hosts:
@@ -153,6 +154,7 @@ class Control(LineReceiver):
 			else:
 				self.sendLine("No connections")
 
+		# Add jobs and relays
 		if re.match(r'^a', cmd):
 			ipregex = r'([0-9]{1,3}\.){3}[0-9]{1,3}'
 			args = len(cmd.split())
@@ -197,6 +199,7 @@ class Control(LineReceiver):
 					for h, time in listener.hosts:
 						listener.jobs.append([h, job, PROMPT, None])
 
+		# Delete jobs and relays
 		if re.match(r'^d', cmd):
 			if len(cmd.split()) == 3:
 				c, host, job = cmd.split()
@@ -221,6 +224,7 @@ class Control(LineReceiver):
 						if host in record:
 							listener.sched.remove(record)
 			
+		# List connections, relays, and jobs
 		if re.match(r'^l', cmd):
 			showsched = showconn = showjobs = False
 			if len(cmd.split()) == 2:
@@ -250,6 +254,7 @@ class Control(LineReceiver):
 					else:
 						self.sendLine(host + " --> " + job + " '" + str(count) + "' more times")
 
+		# Show and add jobs
 		if re.match(r'^j', cmd):
 			path = os.getcwd() + "/jobs/"
 			if len(cmd.split()) == 2:
@@ -262,6 +267,7 @@ class Control(LineReceiver):
 				for j in jobs:
 					self.sendLine(j)
 				
+		# Tap into a session
 		if re.match(r'^t', cmd):
 			if len(cmd.split()) == 2:
 				for i, (host, target, port) in enumerate(listener.conn):
@@ -271,6 +277,7 @@ class Control(LineReceiver):
 						session = os.getcwd() + "/sessions/" + host + "--" + target
 						self.tailfile(session, self.sendLine)
 			else:
+				self.sendLine("Available sessions")
 				for i, (host, target, port) in enumerate(listener.conn):
 					self.sendLine(str(i) + ": " + host + " --> " + target + ":" + port)
 				
