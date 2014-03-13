@@ -39,10 +39,10 @@ class Listener(LineReceiver):
 					cmd = [NETCAT, target, port]
 					cwd = '/tmp'
 						
-					self.conn.append([host, target, port])
 					self.nc = ProcessProtocol(self, [host, target])	
 					reactor.spawnProcess(self.nc, cmd[0], cmd, {}, cwd)
-	
+					self.conn.append([host, target, port, self.nc])
+
 					if count == 1:
 						self.sched.remove(record)
 					if count >= 1:
@@ -122,10 +122,10 @@ class Control(recvline.HistoricRecvLine):
 	
 	def __init__(self, listener):
 		self.hosts = listener.hosts
-		self.tapfile = None
+		self.tap = ()
 		self.state = "MENU"
-		self.name = "--- Red Team Relay Server v0.5 ---\nListening on Port: " + str(LISTEN_PORT) + "\n\n"
-		self.help = "--------------------------------------\nshow  - Show last connections\nlist  - List scheduled relays, active relays, and jobs\nadd   - Add relay (ex. add <host> <target> <port> (<times to run> default is forever)\n        Add job (ex. add <host or all> <job> (<times to run> default is forever))\ndel   - Delete relay(s) (ex. del <target> or del all)\n        Delete job (ex. del <target or all> <job>)\nclean - Clear out last connections cache\njobs  - Show available jobs. Specify a job name to view the job\ntap   - Show viewable sessions. Specify session # to tap into (read-only).\n--------------------------------------\n"
+		self.name = "--- Red Team Relay Server v0.6 ---\nListening on Port: " + str(LISTEN_PORT) + "\n\n"
+		self.help = "--------------------------------------\nshow  - Show last connections\nlist  - List scheduled relays, active relays, and jobs\nadd   - Add relay (ex. add <host> <target> <port> (<times to run> default is forever)\n        Add job (ex. add <host or all> <job> (<times to run> default is forever))\ndel   - Delete relay(s) (ex. del <target> or del all)\n        Delete job (ex. del <target or all> <job>)\nclean - Clear out last connections cache\njobs  - Show available jobs. Specify a job name to view the job\ntap   - Show viewable sessions. Specify session # to tap into.\n--------------------------------------\n"
 
 	def connectionMade(self):
 		#recvline.HistoricRecvLine.connectionMade(self)
@@ -137,7 +137,13 @@ class Control(recvline.HistoricRecvLine):
 		if self.state == "TAP":
 			if re.match(r'^q', line):
 				self.state = "MENU"
-				self.terminal.write("Exiting tap..\n>")
+				self.terminal.write("Exiting tap..\n> ")
+			else:
+				taphost, taptarget = self.tap
+				for host, target, port, obj in listener.conn:
+					if host == taphost and target == taptarget:
+						obj.transport.write(line) #client
+						obj.nc.transport.write(line) #server
 			
 	def handle_menu(self, cmd):
 		if re.match(r'^(quit|exit)', cmd):
@@ -206,7 +212,7 @@ class Control(recvline.HistoricRecvLine):
 			if len(cmd.split()) == 3:
 				c, host, job = cmd.split()
 				for record in listener.jobs:
-					if host and job in record:
+					if host in record and job in record:
 						listener.jobs.remove(record)
 				#delete all jobs
 				if re.match(r'^a', host) and re.match(r'^j', job):
@@ -245,7 +251,7 @@ class Control(recvline.HistoricRecvLine):
 						self.terminal.write(host + " will be relayed to " + target + " on port " + port + " " + str(count) + " more times" + "\n")
 			if listener.conn and showconn:
 				self.terminal.write("\n--- Connections ---\n")
-				for host, target, port in listener.conn:
+				for host, target, port, obj in listener.conn:
 					self.terminal.write(host + " --> " + target + ":" + port + "\n")
 			
 			if listener.jobs and showjobs:
@@ -272,16 +278,17 @@ class Control(recvline.HistoricRecvLine):
 		# Tap into a session
 		if re.match(r'^t', cmd):
 			if len(cmd.split()) == 2:
-				for i, (host, target, port) in enumerate(listener.conn):
+				for i, (host, target, port, obj) in enumerate(listener.conn):
 					if i == int(cmd.split()[1]):
 						self.terminal.write("Tapping into session.. enter 'q' to quit\n")
 						self.state = "TAP"
+						self.tap = (host, target)
 						session = os.getcwd() + "/sessions/" + host + "--" + target
 						self.tailfile(session, self.terminal.write)
 						return
 			else:
 				self.terminal.write("Available sessions\n------------\n")
-				for i, (host, target, port) in enumerate(listener.conn):
+				for i, (host, target, port, obj) in enumerate(listener.conn):
 					self.terminal.write(str(i) + ": " + host + " --> " + target + ":" + port + "\n")
 				
 		if re.match(r'h', cmd):
