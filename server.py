@@ -124,8 +124,8 @@ class Control(recvline.HistoricRecvLine):
 		self.hosts = listener.hosts
 		self.tapfile = None
 		self.state = "MENU"
-		self.name = "--- Red Team Relay Server v0.4 ---\nListening on Port: " + str(LISTEN_PORT) + "\n\n"
-		self.help = "--------------------------------------\nshow  - Show last connections\nlist  - List scheduled relays, active relays, and jobs\nadd   - Add relay (ex. add <host> <target> <port> (<times to run> default is forever)\n        Add job (ex. add <host or all> <job> (<times to run> default is forever))\ndel   - Delete relay(s) (ex. del <target> or del all)\n        Delete job (ex. del <target or all> <job>)\nclean - Clear out last connections cache\njobs  - Show available jobs. Specify a job name to view the job\ntap   - Show viewable sessions. Specify session # to tap into.\n--------------------------------------\n"
+		self.name = "--- Red Team Relay Server v0.5 ---\nListening on Port: " + str(LISTEN_PORT) + "\n\n"
+		self.help = "--------------------------------------\nshow  - Show last connections\nlist  - List scheduled relays, active relays, and jobs\nadd   - Add relay (ex. add <host> <target> <port> (<times to run> default is forever)\n        Add job (ex. add <host or all> <job> (<times to run> default is forever))\ndel   - Delete relay(s) (ex. del <target> or del all)\n        Delete job (ex. del <target or all> <job>)\nclean - Clear out last connections cache\njobs  - Show available jobs. Specify a job name to view the job\ntap   - Show viewable sessions. Specify session # to tap into (read-only).\n--------------------------------------\n"
 
 	def connectionMade(self):
 		#recvline.HistoricRecvLine.connectionMade(self)
@@ -263,7 +263,7 @@ class Control(recvline.HistoricRecvLine):
 				c, filename = cmd.split()
 				with open(path + filename) as jobfile: #TODO handle exceptions
 					for line in jobfile.readlines():
-						self.terminal.write(line)
+						self.terminal.write(line + "\n")
 			else:
 				jobs = [ f for f in os.listdir(path) if isfile(join(path,f)) ]
 				for j in jobs:
@@ -304,7 +304,7 @@ class Control(recvline.HistoricRecvLine):
 	    	if self.file_identity(stat) != self.file_identity(fstat):
 			fileobj = open(filename)
 			fstat = os.fstat(fileobj.fileno())
-		if self.state == "TAP":
+		if self.state == "TAP": #kill the loop if state is switched
 			reactor.callLater(freq, lambda: self.tailfile(filename, callback, freq, fileobj, fstat))	
 
 class ControlFactory(Factory):
