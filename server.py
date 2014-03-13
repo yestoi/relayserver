@@ -2,6 +2,7 @@
 
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineReceiver
+from twisted.conch import recvline
 from twisted.internet import reactor, protocol, defer
 from os.path import isfile, join
 import pdb, datetime, re, os, stat
@@ -117,30 +118,31 @@ class ListenerFactory(Factory):
 	def buildProtocol(self, addr):
 		return Listener(self.hosts, self.sched, self.conn, self.jobs)
 
-class Control(LineReceiver):
-	delimiter = "\n"
+class Control(recvline.HistoricRecvLine):
 	
 	def __init__(self, listener):
 		self.hosts = listener.hosts
 		self.tapfile = None
 		self.state = "MENU"
 		self.name = "--- Red Team Relay Server v0.4 ---\nListening on Port: " + str(LISTEN_PORT) + "\n\n"
-		self.help = "--------------------------------------\nshow  - Show last connections\nlist  - List scheduled relays, active relays, and jobs\nadd   - Add relay (ex. add <host> <target> <port> (<times to run> default is forever)\n        Add job (ex. add <host or all> <job> (<times to run> default is forever))\ndel   - Delete relay(s) (ex. del <target> or del all)\n        Delete job (ex. del <target or all> <job>)\nclean - Clear out last connections cache\njobs  - Show available jobs. Specify a job name to view the job\ntap   - Show viewable sessions. Specify session # to tap into.\n--------------------------------------"
+		self.help = "--------------------------------------\nshow  - Show last connections\nlist  - List scheduled relays, active relays, and jobs\nadd   - Add relay (ex. add <host> <target> <port> (<times to run> default is forever)\n        Add job (ex. add <host or all> <job> (<times to run> default is forever))\ndel   - Delete relay(s) (ex. del <target> or del all)\n        Delete job (ex. del <target or all> <job>)\nclean - Clear out last connections cache\njobs  - Show available jobs. Specify a job name to view the job\ntap   - Show viewable sessions. Specify session # to tap into.\n--------------------------------------\n"
 
 	def connectionMade(self):
-		self.sendLine(self.name + "(type help for commands)")
-
-	def lineReceived(self, line):
+		#recvline.HistoricRecvLine.connectionMade(self)
+		self.terminal.write(self.name + "(type help for commands)\n> ") #Show prompt
+	
+	def dataReceived(self, line):
 		if self.state == "MENU":
 			self.handle_menu(line)
 		if self.state == "TAP":
 			if re.match(r'^q', line):
 				self.state = "MENU"
-				self.sendLine("Exiting tap..")
+				self.terminal.write("Exiting tap..\n>")
 			
 	def handle_menu(self, cmd):
 		if re.match(r'^(quit|exit)', cmd):
-			self.transport.loseConnection()
+			self.terminal.loseConnection()
+			return
 
 		if re.match(r'^c', cmd):
 			listener.hosts = []
@@ -150,9 +152,9 @@ class Control(LineReceiver):
 			self.hosts = listener.hosts
 			if self.hosts:
 				for h,d in self.hosts:
-					self.sendLine(str(h) + "     -- " + d.strftime("%I:%M%p"))
+					self.terminal.write(str(h) + "     -- " + d.strftime("%I:%M%p") + "\n")
 			else:
-				self.sendLine("No connections")
+				self.terminal.write("No connections\n")
 
 		# Add jobs and relays
 		if re.match(r'^a', cmd):
@@ -185,7 +187,7 @@ class Control(LineReceiver):
 						listener.jobs.append([h, job, PORMPT, int(port)])
 				
 				else:
-					sendLine("Your command was weird")
+					terminal.write("Your command was weird")
 
 			if args == 3:
 				c, host, job = cmd.split()
@@ -229,30 +231,30 @@ class Control(LineReceiver):
 			showsched = showconn = showjobs = False
 			if len(cmd.split()) == 2:
 				if re.match(r'r',cmd.split()[1]): showsched = True
-				elif re.match(r'c',cmd.split()[1]): showconn = True
-				elif re.match(r'j',cmd.split()[1]): showjobs = True
+				if re.match(r'c',cmd.split()[1]): showconn = True
+				if re.match(r'j',cmd.split()[1]): showjobs = True
 			else:
 				showsched = showconn = showjobs = True
 
 			if listener.sched and showsched:
-				self.sendLine("--- Relays ---")
+				self.terminal.write("--- Relays ---\n")
 				for host, target, port, count in listener.sched:
 					if count == 0:
-						self.sendLine(host + " will be relayed to " + target + " on port " + port)
+						self.terminal.write(host + " will be relayed to " + target + " on port " + port + "\n")
 					else:
-						self.sendLine(host + " will be relayed to " + target + " on port " + port + " " + str(count) + " more times")
+						self.terminal.write(host + " will be relayed to " + target + " on port " + port + " " + str(count) + " more times" + "\n")
 			if listener.conn and showconn:
-				self.sendLine("\n--- Connections ---")
+				self.terminal.write("\n--- Connections ---\n")
 				for host, target, port in listener.conn:
-					self.sendLine(host + " --> " + target + ":" + port)
+					self.terminal.write(host + " --> " + target + ":" + port + "\n")
 			
 			if listener.jobs and showjobs:
-				self.sendLine("\n--- Jobs ---")
+				self.terminal.write("\n--- Jobs ---\n")
 				for host, job, p, count in listener.jobs:
 					if count == None:
-						self.sendLine(host + " --> " + job)
+						self.terminal.write(host + " --> " + job + "\n")
 					else:
-						self.sendLine(host + " --> " + job + " '" + str(count) + "' more times")
+						self.terminal.write(host + " --> " + job + " '" + str(count) + "' more times" + "\n")
 
 		# Show and add jobs
 		if re.match(r'^j', cmd):
@@ -261,30 +263,31 @@ class Control(LineReceiver):
 				c, filename = cmd.split()
 				with open(path + filename) as jobfile: #TODO handle exceptions
 					for line in jobfile.readlines():
-						self.sendLine(line)
+						self.terminal.write(line)
 			else:
 				jobs = [ f for f in os.listdir(path) if isfile(join(path,f)) ]
 				for j in jobs:
-					self.sendLine(j)
+					self.terminal.write(j)
 				
 		# Tap into a session
 		if re.match(r'^t', cmd):
 			if len(cmd.split()) == 2:
 				for i, (host, target, port) in enumerate(listener.conn):
 					if i == int(cmd.split()[1]):
-						self.sendLine("Tapping into session.. enter 'q' to quit")
+						self.terminal.write("Tapping into session.. enter 'q' to quit\n")
 						self.state = "TAP"
 						session = os.getcwd() + "/sessions/" + host + "--" + target
-						self.tailfile(session, self.sendLine)
+						self.tailfile(session, self.terminal.write)
+						return
 			else:
-				self.sendLine("Available sessions")
+				self.terminal.write("Available sessions\n------------\n")
 				for i, (host, target, port) in enumerate(listener.conn):
-					self.sendLine(str(i) + ": " + host + " --> " + target + ":" + port)
+					self.terminal.write(str(i) + ": " + host + " --> " + target + ":" + port + "\n")
 				
 		if re.match(r'h', cmd):
-			self.sendLine(self.help)	
+			self.terminal.write(self.help)	
 		
-		self.sendLine("") #newline after every input.
+		self.terminal.write("\n> ") #newline after every input.
 			
 	def file_identity(self, struct_stat):
 		return struct_stat[stat.ST_DEV], struct_stat[stat.ST_INO]
@@ -294,9 +297,7 @@ class Control(LineReceiver):
 			fileobj = open(filename)
 			fileobj.seek(0, 2)
 		line = fileobj.read()
-		if line: 
-			callback(line)
-			pdb.set_trace()
+		if line: callback(line)
 	    	if fstat is None: fstat = os.fstat(fileobj.fileno())
 	    	try: stat = os.stat(filename)
 	    	except: stat = fstat
