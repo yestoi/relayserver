@@ -7,7 +7,7 @@ from twisted.internet import reactor, protocol, defer
 from os.path import isfile, join
 import pdb, datetime, re, os, stat
 
-LISTEN_PORT = 443 # Your callbacks should be sent here
+LISTEN_PORT = 443  # Your callbacks should be sent here
 COMMAND_PORT = 444 # Port to interact with server
 NETCAT = '/bin/nc' 
 PROMPT = r'# $' #default shell prompt
@@ -191,7 +191,7 @@ class Control(recvline.HistoricRecvLine):
 				elif re.match(ipregex,host) and re.match(r'[a-zA-Z0-9]+', target):
 					if re.match(r'[0-9]+', port):
 						listener.jobs.append([host, target, PROMPT, int(port)]) #host, job, default prompt, count
-					elif count > 0:
+					elif count >= 1:
 						listener.jobs.append([host, target, port, count]) #host, job, prompt, count
 					else:
 						listener.jobs.append([host, target, port, None]) #host, job, prompt, default count
