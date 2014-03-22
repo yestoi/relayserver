@@ -64,7 +64,7 @@ class Listener(LineReceiver):
 			self.nc.log.flush()
 
 		if self.jobs:
-			for host, target, port in self.conn:
+			for host, target, port, nc in self.conn:
 				if host == self.transport.getPeer().host:
 					return # Don't muck with established connections. 
 			for job in self.jobs:
@@ -120,9 +120,10 @@ class ListenerFactory(Factory):
 
 class Control(recvline.HistoricRecvLine):
 	
-	def __init__(self, listener):
+	def __init__(self, listener, tags):
 		self.hosts = listener.hosts
 		self.tap = []
+		self.tags = tags
 		self.state = "MENU"
 		self.name = "--- Red Team Relay Server v0.6 ---\nListening on Port: " + str(LISTEN_PORT) + "\n\n"
 		self.help = "--------------------------------------\nshow  - Show last connections. Specify a regex to filter the list\nlist  - List scheduled relays, active relays, and jobs\nadd   - Add relay (ex. add <host> <target> <port> (<times to run> 0 for forever)\n        Add job (ex. add <host or all> <job> (<times to run> 0 for forever))\ndel   - Delete relay(s) (ex. del <target> or del all)\n        Delete job (ex. del <target or all> <job>)\nclean - Clear out last connections cache\njobs  - Show available jobs. Specify a job name to view the job\ntap   - Show viewable sessions. Specify session # to tap into.\n--------------------------------------\n"
@@ -160,16 +161,35 @@ class Control(recvline.HistoricRecvLine):
 
 		# Show last connections
 		elif re.match(r'^s', cmd):
-			self.hosts = listener.hosts
-			if self.hosts:
-				if len(cmd.split()) == 2:
-					for h,d in self.hosts:
-						if re.search(cmd.split()[1], h): self.terminal.write(str(h) + "     -- " + d.strftime("%I:%M%p") + "\n")
+			args = len(cmd.split())
+
+			if args == 2: tag = cmd.split()[1]
+			else: tag = '*'
+
+			if args == 2 and re.match(r'^t$', tag):
+				self.terminal.write("--- Tags ---\n")
+				for tag, regex in self.tags:
+					self.terminal.write(tag + "  ->  '" + regex + "'\n")
+			else:	
+				self.hosts = listener.hosts
+				if self.hosts:
+					regex = tag
+					if args == 2 and tag in (i[0] for i in self.tags):
+						for t, r in self.tags:
+							if t == tag:
+								regex = r
+									
+						for h,d in self.hosts:
+							if re.search(regex, h): self.terminal.write(str(h) + "     -- " + d.strftime("%I:%M%p") + "\n")
+
+					elif args == 2 and regex == tag:
+						for h,d in self.hosts:
+							if re.search(regex, h): self.terminal.write(str(h) + "     -- " + d.strftime("%I:%M%p") + "\n")
+					else:
+						for h,d in self.hosts:
+							self.terminal.write(str(h) + "     -- " + d.strftime("%I:%M%p") + "\n")
 				else:
-					for h,d in self.hosts:
-						self.terminal.write(str(h) + "     -- " + d.strftime("%I:%M%p") + "\n")
-			else:
-				self.terminal.write("No connections\n")
+					self.terminal.write("No connections\n")
 
 		# Add jobs and relays
 		elif re.match(r'^a', cmd):
@@ -191,16 +211,29 @@ class Control(recvline.HistoricRecvLine):
 				elif re.match(ipregex,host) and re.match(r'[a-zA-Z0-9]+', target):
 					if re.match(r'[0-9]+', port):
 						listener.jobs.append([host, target, PROMPT, int(port)]) #host, job, default prompt, count
-					elif count >= 1:
-						listener.jobs.append([host, target, port, count]) #host, job, prompt, count
 					else:
-						listener.jobs.append([host, target, port, None]) #host, job, prompt, default count
-				
-				#schedule job for all callbacks for a set number of times 
-				elif re.match(r'all', host) and re.match(r'[a-zA-Z0-9]+', target) and re.match(r'[0-9]+', port):
+						listener.jobs.append([host, target, port, count]) #host, job, prompt, count  
+
+				#add tag
+				elif re.match(r'tag', host) and re.match(r'[a-zA-z0-9_]+', target):
+					for t in self.tags:
+						if target == t: self.tags.remove(t)
+					self.tags.append([target, port])
+
+				#schedule job based on tag
+				elif host in (i[0] for i in self.tags):
+					regex = None
+					for tag, r in self.tags:
+						if host == tag:
+							regex = r
+
 					for h, time in listener.hosts:
-						listener.jobs.append([h, job, PORMPT, int(port)])
-				
+						if re.search(regex, h):
+							if re.match(r'[0-9]+', port):
+								listener.jobs.append([h, target, PROMPT, count]) #host, job, default prompt, count
+							else:
+								listener.jobs.append([h, target, port, count]) #host, job, prompt, count
+
 				else:
 					self.terminal.write("Your command was weird\n")
 
@@ -209,13 +242,19 @@ class Control(recvline.HistoricRecvLine):
 
 				#schedule job for a callback
 				if re.match(ipregex, host) and re.match(r'[a-zA-Z0-9]+', job):
-					listener.jobs.append([host, job, PROMPT, None])
+					listener.jobs.append([host, job, PROMPT, count])
 
-				#schedule job for all callbacks
-				if re.match(r'all', host) and re.match(r'[a-zA-Z0-9]+', job):
+				#schedule job for a tag
+				elif host in (i[0] for i in self.tags):
+					regex = None
+					for tag, r in self.tags:
+						if tag == host:
+							regex = r
+
 					for h, time in listener.hosts:
-						listener.jobs.append([h, job, PROMPT, None])
-
+						if re.search(regex, h):
+							listener.jobs.append([h, job, PROMPT, count])
+														
 		# Delete jobs and relays
 		elif re.match(r'^d', cmd):
 			if len(cmd.split()) == 3:
@@ -329,9 +368,10 @@ class Control(recvline.HistoricRecvLine):
 class ControlFactory(Factory):
 	def __init__(self, listener):
 		self.listener = listener
+		self.tags = []
 
 	def buildProtocol(self, addr):
-		return Control(self.listener)
+		return Control(self.listener, self.tags)
 
 listener = ListenerFactory()
 reactor.listenTCP(LISTEN_PORT, listener)
