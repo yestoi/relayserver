@@ -135,7 +135,7 @@ class Control(recvline.HistoricRecvLine):
     def handle_input(self, line):
         cmd = line.split()[0]
         relay_m = re.search(r'(([0-9]{1,3}\.){3}[0-9]{1,3} ){2}[0-9]{1,5}(.*?)$', line)
-        show_m = re.search(r'(relay|job)')
+        show_m = re.search(r'(relay|job)', line)
 
         if cmd == "show":
             if show_m:
@@ -152,8 +152,8 @@ class Control(recvline.HistoricRecvLine):
         #Add relays with support for additional options
         elif cmd == "add" and relay_m:
             if relay_m.group(relay_m.lastindex) == "":
-                c, host, target, port = cmd
-                listener.sched.append([host, target, port])
+                c, host, target, port = line.split() 
+                listener.sched.append([host, target, port, 1])
 
         else:
             self.terminal.write("huh?\n")
