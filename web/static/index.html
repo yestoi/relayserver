@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<link href="css/style.css" rel="stylesheet">
+		<link href="css/jquery.sidr.dark.css" rel="stylesheet">
+		<script type="text/javascript" src="//code.jquery.com/jquery-1.6.1.min.js"></script>
+		<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.16/socket.io.min.js"></script>
+		<script type="text/javascript" src="js/jquery.nested.js"></script>
+		<script type="text/javascript" src="js/jquery.sidr.js"></script>
+		<script type="text/javascript" src="js/makeboxes.js"></script>
+		<script type="text/javascript" src="js/zoomerang.js"></script>
+		
+<script> 
+$(document).ready(function() {
+	$("#sessions").nested({
+		gutter: 5,
+		minWidth: 75,
+		resizeToFit: true,
+		animate: true,
+		animationOptions: {
+			speed: 300,
+			duration: 200,
+			queue: true
+		}
+	});
+
+	$('#menu').sidr({displace: false});
+	$.sidr('open', 'sidr');
+
+	$('.invisible').hide();
+	$('#init').remove();
+
+	
+
+	var socket = io.connect('http://' + document.domain + ':' + location.port + '/sessions');
+
+	socket.on('connect', function() {
+		socket.emit('testevent', {data: 'Hey'});
+	});
+
+	var sess = [];
+	socket.on('session_data', function(data) {
+		for (var key in data) {
+			if (data.hasOwnProperty(key)) {
+				var keyid = key.replace(/\./g, "-");
+				var title = key.replace("--", " -> ");
+
+				if ($.inArray(keyid, sess) > -1) {
+					$("#" + keyid).empty();
+					$("#" + keyid).append("<H2>" + title + "</H2>");
+					$("#" + keyid).append("<pre><span class=\"zoom\">" + data[key] + "</span></pre>");
+				}
+				else {
+					var box = makeBoxes(1, 54, keyid);
+					$('#sessions').append(box).nested('append', box);
+					sess.push(keyid);
+				}
+			}
+		}
+	});
+
+});
+
+
+</script>
+	</head>
+
+<body>
+	<a id="menu" href="#sidr" class="invisible"></a> <!-- Horrible hack -->
+	<div id="sidr">
+		<ul>
+			<li class="active"><a href="#">Sessions</a></li>
+			<li><a href="#">Relays</a></li>
+			<li><a href="#">Jobs</a></li>
+		</ul>
+	</div>
+
+	<div id="sessions">
+		<div id="init" class="box size44"></div>
+	</div>
+	<script>
+Zoomerang
+		.config({
+			maxHeight: 400,
+			maxWidth: 400,
+			bgColor: '#000',
+			bgOpacity: .85,
+			onOpen: openCallback,
+			onClose: closeCallback
+		}).listen('.zoom')
+
+	function openCallback (el) {
+		console.log('zoomed in on: ')
+		console.log(el)
+	}
+
+	function closeCallback (el) {
+		console.log('zoomed out on: ')
+		console.log(el)
+	}
+	</script>
+</body>
+</html>
