@@ -14,11 +14,11 @@ $(document).ready(function() {
 		gutter: 5,
 		minWidth: 75,
 		resizeToFit: false,
-		animate: true,
+		animate: false,
 		animationOptions: {
 			speed: 300,
 			duration: 200,
-			queue: true
+			queue: false 
 		}
 	});
 
@@ -51,6 +51,14 @@ $(document).ready(function() {
 		}
 	});
 
+
+	$("#sidr ul li .teams").click(function() {
+		$("#sessions").hide();
+		$("#sidr ul li .sessions").removeClass("active");
+		$("#teams").show();
+		$("#sidr ul li .teams").addClass("active");
+	});
+
 });
 
 
@@ -61,14 +69,19 @@ $(document).ready(function() {
 	<a id="menu" href="#sidr" class="invisible"></a> <!-- Horrible hack -->
 	<div id="sidr">
 		<ul>
-			<li class="active"><a href="#">Sessions</a></li>
-			<li><a href="#">Relays</a></li>
-			<li><a href="#">Jobs</a></li>
+			<li class="teams"><a href="#">Teams</a></li>
+			<li class="active sessions"><a href="#">Sessions</a></li>
+			<li class="relays"><a href="#">Relays</a></li>
+			<li class="jobs"><a href="#">Jobs</a></li>
 		</ul>
 	</div>
 
 	<div id="sessions">
 		<div id="init" class="box size44"></div>
+	</div>
+
+	<div id="teams" class="invisible">
+		<figure></figure>
 	</div>
 </body>
 </html>
