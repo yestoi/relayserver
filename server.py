@@ -127,6 +127,7 @@ class Control(recvline.HistoricRecvLine):
 
     def connectionMade(self):
         self.terminal.write(self.name + "> ") #show prompt
+        #print "Got a connection from: " + self.transport.getPeer.host()
 
     def dataReceived(self, line):
         if self.state == "INPUT":
@@ -144,6 +145,12 @@ class Control(recvline.HistoricRecvLine):
                         self.terminal.write(host + " > " + target + ":" + port + "\n")
             else:
                 if listener.hosts:
+                    teams = []
+                    for host, date in listener.hosts:
+                        m = re.search(r'[0-9]{1,3}\.[0-9]{1,3}\.([0-9]{1,3})\.[0-9]{1,3}', host)
+                        if m.group(1): teams.append(m.group(1))
+                    
+                    self.terminal.write(str(len(listener.hosts)) + " targets across " + str(len(set(teams))) + " teams:\n")
                     for host, date in listener.hosts:
                         self.terminal.write(str(host) + "," + date.strftime("%I:%M%p") + "\n")
                 else:
@@ -155,6 +162,8 @@ class Control(recvline.HistoricRecvLine):
                 c, host, target, port = line.split() 
                 listener.sched.append([host, target, port, 1])
 
+        elif cmd == "help":
+            self.terminal.write("Just 'show' and 'add' commands at the moment.\nadd <target> <host> <port>\n\nex. 'show' or 'show relay'\nex. 'add 172.25.20.11 10.0.0.101 53'")
         else:
             self.terminal.write("huh?\n")
 

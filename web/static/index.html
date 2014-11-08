@@ -22,6 +22,18 @@ $(document).ready(function() {
 		}
 	});
 
+	$("#teamgrid").nested({
+		gutter: 5,
+		minWidth: 75,
+		resizeToFit: false,
+		animate: false,
+		animationOptions: {
+			speed: 300,
+			duration: 200,
+			queue: false 
+		}
+	});
+
 	$('#menu').sidr({displace: false});
 	$.sidr('open', 'sidr');
 
@@ -51,12 +63,33 @@ $(document).ready(function() {
 		}
 	});
 
+	hideAll = function() {
+		$("div.menu").hide();
+		$("li").removeClass("active");
+		}
 
-	$("#sidr ul li .teams").click(function() {
-		$("#sessions").hide();
-		$("#sidr ul li .sessions").removeClass("active");
+	$("li.teams").click(function() {
+		hideAll();
 		$("#teams").show();
-		$("#sidr ul li .teams").addClass("active");
+		$("li.teams").addClass("active");
+	});
+
+	$("li.sessions").click(function() {
+		hideAll();
+		$("#sessions").show();
+		$("li.sessions").addClass("active");
+	});
+
+	$("li.relays").click(function() {
+		hideAll();
+		$("#relays").show();
+		$("li.relays").addClass("active");
+	});
+
+	$("li.jobs").click(function() {
+		hideAll();
+		$("#jobs").show();
+		$("li.jobs").addClass("active");
 	});
 
 });
@@ -76,12 +109,169 @@ $(document).ready(function() {
 		</ul>
 	</div>
 
-	<div id="sessions">
+	<div id="sessions" class="menu">
 		<div id="init" class="box size44"></div>
 	</div>
 
-	<div id="teams" class="invisible">
-		<figure></figure>
+	<div id="teams" class="invisible menu">
+		<div>
+			<input type="text" class="ui-corner-all" placeholder="Name"></input>
+			<input type="text" class="ui-corner-all" placeholder="IP Address"></input>
+			<button>Add Hacker</button>
+		</div>
+
+		<div>
+			Red Team Member Listing Area
+		</div>
+
+		<div id="teamgrid">
+			<div class="box size33">
+				<h2>Team 1</h2>
+				<ul>
+					<li>192.168.1.20</li>
+					<li>192.168.1.40</li>
+					<li>192.168.1.50</li>
+					<li>192.168.1.60</li>
+					<li>192.168.1.70</li>
+					<li>192.168.1.80</li>
+					<li>192.168.1.90</li>
+					<li>192.168.1.100</li>
+				</ul>
+			</div>
+<div class="box size33">
+				<h2>Team 1</h2>
+				<ul>
+					<li>192.168.1.20</li>
+					<li>192.168.1.40</li>
+					<li>192.168.1.50</li>
+					<li>192.168.1.60</li>
+					<li>192.168.1.70</li>
+					<li>192.168.1.80</li>
+					<li>192.168.1.90</li>
+					<li>192.168.1.100</li>
+				</ul>
+			</div>
+<div class="box size33">
+				<h2>Team 1</h2>
+				<ul>
+					<li>192.168.1.20</li>
+					<li>192.168.1.40</li>
+					<li>192.168.1.50</li>
+					<li>192.168.1.60</li>
+					<li>192.168.1.70</li>
+					<li>192.168.1.80</li>
+					<li>192.168.1.90</li>
+					<li>192.168.1.100</li>
+				</ul>
+			</div>
+<div class="box size33">
+				<h2>Team 1</h2>
+				<ul>
+					<li>192.168.1.20</li>
+					<li>192.168.1.40</li>
+					<li>192.168.1.50</li>
+					<li>192.168.1.60</li>
+					<li>192.168.1.70</li>
+					<li>192.168.1.80</li>
+					<li>192.168.1.90</li>
+					<li>192.168.1.100</li>
+				</ul>
+			</div>
+<div class="box size33">
+				<h2>Team 1</h2>
+				<ul>
+					<li>192.168.1.20</li>
+					<li>192.168.1.40</li>
+					<li>192.168.1.50</li>
+					<li>192.168.1.60</li>
+					<li>192.168.1.70</li>
+					<li>192.168.1.80</li>
+					<li>192.168.1.90</li>
+					<li>192.168.1.100</li>
+				</ul>
+			</div>
+<div class="box size33">
+				<h2>Team 1</h2>
+				<ul>
+					<li>192.168.1.20</li>
+					<li>192.168.1.40</li>
+					<li>192.168.1.50</li>
+					<li>192.168.1.60</li>
+					<li>192.168.1.70</li>
+					<li>192.168.1.80</li>
+					<li>192.168.1.90</li>
+					<li>192.168.1.100</li>
+				</ul>
+			</div>
+<div class="box size33">
+				<h2>Team 1</h2>
+				<ul>
+					<li>192.168.1.20</li>
+					<li>192.168.1.40</li>
+					<li>192.168.1.50</li>
+					<li>192.168.1.60</li>
+					<li>192.168.1.70</li>
+					<li>192.168.1.80</li>
+					<li>192.168.1.90</li>
+					<li>192.168.1.100</li>
+				</ul>
+			</div>
+<div class="box size33">
+				<h2>Team 1</h2>
+				<ul>
+					<li>192.168.1.20</li>
+					<li>192.168.1.40</li>
+					<li>192.168.1.50</li>
+					<li>192.168.1.60</li>
+					<li>192.168.1.70</li>
+					<li>192.168.1.80</li>
+					<li>192.168.1.90</li>
+					<li>192.168.1.100</li>
+				</ul>
+			</div>
+<div class="box size33">
+				<h2>Team 1</h2>
+				<ul>
+					<li>192.168.1.20</li>
+					<li>192.168.1.40</li>
+					<li>192.168.1.50</li>
+					<li>192.168.1.60</li>
+					<li>192.168.1.70</li>
+					<li>192.168.1.80</li>
+					<li>192.168.1.90</li>
+					<li>192.168.1.100</li>
+				</ul>
+			</div>
+<div class="box size33">
+				<h2>Team 1</h2>
+				<ul>
+					<li>192.168.1.20</li>
+					<li>192.168.1.40</li>
+					<li>192.168.1.50</li>
+					<li>192.168.1.60</li>
+					<li>192.168.1.70</li>
+					<li>192.168.1.80</li>
+					<li>192.168.1.90</li>
+					<li>192.168.1.100</li>
+				</ul>
+			</div>
+<div class="box size33">
+				<h2>Team 1</h2>
+				<ul>
+					<li>192.168.1.20</li>
+					<li>192.168.1.40</li>
+					<li>192.168.1.50</li>
+					<li>192.168.1.60</li>
+					<li>192.168.1.70</li>
+					<li>192.168.1.80</li>
+					<li>192.168.1.90</li>
+					<li>192.168.1.100</li>
+				</ul>
+			</div>
+		</div>
 	</div>
+
+	<div id="relays" class="invisible menu"></div>
+	<div id="jobs" class="invisible menu"></div>
 </body>
 </html>
