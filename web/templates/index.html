@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Red Team Panel</title>
+
+<link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.5.0/pure-min.css">
+<link rel="stylesheet" href="css/layouts/side-menu.css">
+
+<script type="text/javascript" src="//code.jquery.com/jquery-1.6.1.min.js"></script>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.16/socket.io.min.js"></script>
+<script type="text/javascript" src="js/jquery.nested.js"></script>
+<script type="text/javascript" src="js/makeboxes.js"></script>
+<script> 
+$(document).ready(function() {
+		$("#sessions").nested({
+				gutter: 5,
+				minWidth: 75,
+				resizeToFit: false,
+				animate: false,
+				animationOptions: {
+					speed: 300,
+					duration: 200,
+					queue: false 
+				}
+		});
+
+		$('.invisible').hide(); 
+		$('#init').remove();
+
+		var socket = io.connect('http://' + document.domain + ':' + location.port + '/sessions');
+
+		var sess = [];
+		socket.on('session_data', function(data) {
+		for (var key in data) {
+			if (data.hasOwnProperty(key)) {
+				var keyid = key.replace(/\./g, "-");
+				var title = key.replace("--", " -> ");
+
+				if ($.inArray(keyid, sess) <= -1) {
+					var box = makeBoxes(1, 54, keyid);
+					$('#sessions').append(box).nested('append', box);
+					sess.push(keyid);
+				}
+
+				$("#" + keyid).empty();
+				$("#" + keyid).append("<H2>" + title + "</H2>");
+				$("#" + keyid).append("<pre>" + data[key] + "</pre>");
+
+				<!--
+				if ($.inArray(keyid, sess) > -1) {
+					$("#" + keyid).empty();
+					$("#" + keyid).append("<H2>" + title + "</H2>");
+					$("#" + keyid).append("<pre>" + data[key] + "</pre>");
+				}
+				else {
+					var box = makeBoxes(1, 54, keyid);
+					$('#sessions').append(box).nested('append', box);
+					sess.push(keyid);
+				}
+				-->
+			}
+		}});
+
+		/*
+		socket.on('team_data', function(data) {
+		for (var key in data) {
+			if (data.hasOwnProperty(key)) {
+				var keyid = key.replace(/ /g, "-");
+				var ips = data[key].split(",");
+
+				$("#teamgrid").append("<div class=\"pure-u-1-2\"><h2>" + key + "</h2><ul>");
+				for (var ip in ips) {
+					$("#teamgrid").append("<li>" + ips[ip] + "</li>");
+				}
+			}
+		}
+		});
+		*/
+
+		socket.on('team_data', function(data) {
+		for (var key in data) {
+			var html = "<p><strong>" + key + "</strong><span style=\"font-size:22px\"> - ";
+			html += data[key] + "</span></p>";
+			$(".hackers").append(html)	
+		}
+		});
+
+
+		$("#hackerform").submit(function() {
+			socket.emit('add_hacker', {hacker: $("#hacker").val(), ip: $("#hackerip").val()});
+		});
+
+		hideAll = function() {
+			$("div.menuitem").hide();
+			$("li").removeClass("pure-menu-selected");
+			}
+
+		$("li.teams").click(function() {
+			hideAll();
+			$("#teams").show();
+			$("li.teams").addClass("pure-menu-selected");
+		});
+
+		$("li.sessions").click(function() {
+			hideAll();
+			$("#sessions").show();
+			$("li.sessions").addClass("pure-menu-selected");
+		});
+
+		$("li.relays").click(function() {
+			hideAll();
+			$("#relays").show();
+			$("li.relays").addClass("pure-menu-selected");
+		});
+
+		$("li.jobs").click(function() {
+			hideAll();
+			$("#jobs").show();
+			$("li.jobs").addClass("pure-menu-selected");
+		});
+
+});
+</script>
+
+
+</head>
+<body>
+
+<div id="layout">
+    <!-- Menu toggle -->
+    <a href="#menu" id="menuLink" class="menu-link">
+    </a>
+
+    <div id="menu">
+        <div class="pure-menu pure-menu-open">
+            <a class="pure-menu-heading" href="#">Red Team Server</a>
+
+            <ul>
+                <li class="teams"><a href="#">Teams</a></li>
+                <li class="sessions menu-item-divided pure-menu-selected"><a href="#">Sessions</a></li>
+				<li class="relays"><a href="#">Relays</a></li>
+                <li class="jobs"><a href="#">Jobs</a></li>
+                <li class="chat"><a href="#">Chat</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="main">
+      <div class="content">
+
+				<div id="teams" class="invisible menuitem">
+					<div class="pure-g">
+						<div class="pure-u-1-2 l-box" style="position: relative">
+							<form id="hackerform">
+								<fieldset>
+									<legend>Add a hacker</legend>
+									<input id="hacker" type="name" placeholder="Name">
+									<input id="hackerip" list="ip"> 
+									<datalist id="ip">
+										<option value="192.168.1.5">
+										<option value="192.168.5.5">
+									</datalist>
+									<button type="submit" class="pure-button pure-button-primary">Add</button>
+								</fieldset>
+							</form>
+
+							<div class="hackers">
+								{% for hacker, ip in hackers %}
+								<p><strong>{{hacker}}</strong><span style="font-size:22px"> - {{ip}}</span></p>
+								{% endfor %}
+							</div>
+						</div>
+						<div class="pure-u-1-2 l-box">
+							<div id="teamgrid" class="pure-g">
+								{% for team, ips in teams %}
+								<div class="pure-u-1-2">
+									<h2>{{ team }}</h2>
+									<ul>
+									{% for ip in ips %}
+									<li>{{ ip }}</li>
+									{% endfor %}
+									</ul>
+								</div>
+								{% endfor %}
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div id="sessions" class="menuitem">
+				  <div id="init" class="box size44"></div>
+				</div>
+
+				<div id="relays" class="invisible menuitem">
+				</div>
+
+				<div id="jobs" class="invisible menuitem">
+				</div>
+
+
+        </div>
+    </div>
+</div>
+
+<script src="js/ui.js"></script>
+</body>
+</html>
