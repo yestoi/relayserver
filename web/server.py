@@ -21,32 +21,39 @@ sess_thread = None
 main_thread = None
 relay_server = "127.0.0.1"
 relay_port = 444
-teams = []
-hackers = []
+teams = []   # [team, ips]
+hackers = [] # [hacker, ip]
+sessions = {}
 
 for x in range(1, args.num+1):
     teams.append(["Team " + str(x), args.ips.replace("x", str(x)).split(",")])
 
 def push_data():
-    s = socket.socket()
-    s.connect((relay_server, relay_port))
-
     while True:
+        s = socket.socket()
+        s.connect((relay_server, relay_port))
         s.recv(1024)
         s.send("show relay")
         relay = s.recv(1024)
         s.send("show")
         conns = s.recv(1024)
+        s.close()
 
         print relay
         print conns
+        for key in sessions.keys():
+            host, target = key.split("--")
+            hacker = [s for s in hackers if host in s]
+            if hacker:
+                h, ip = hacker[0]
+                
 
         time.sleep(5)
 
 def push_sessions():
     while True:
         files = list(os.walk('../sessions'))[0][2]
-        sessions = {}
+        global sessions
 
         for f in files:
             fd = open('../sessions/' + f, 'r')

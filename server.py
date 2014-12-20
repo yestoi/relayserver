@@ -141,7 +141,7 @@ class Control(recvline.HistoricRecvLine):
         if cmd == "show":
             if show_m:
                 if show_m.group(1) == "relay":
-                    for host, target, port in listener.sched:
+                    for host, target, port, count in listener.sched:
                         self.terminal.write(host + " > " + target + ":" + port + "\n")
             else:
                 if listener.hosts:
