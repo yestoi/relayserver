@@ -178,8 +178,8 @@ $(document).ready(function() {
 								<div class="pure-u-1-2">
 									<h2>{{ team }}</h2>
 									<ul>
-									{% for ip in ips %}
-									<li>{{ ip }}</li>
+									{% for ip, hacker in ips %}
+									<li>{{ ip }}</li> <!-- {{hacker}} -->
 									{% endfor %}
 									</ul>
 								</div>

@@ -28,6 +28,10 @@ sessions = {}
 for x in range(1, args.num+1):
     teams.append(["Team " + str(x), args.ips.replace("x", str(x)).split(",")])
 
+for i,_ in enumerate(teams): 
+    for a, ip in enumerate(teams[i][1]):
+        teams[i][1][a] = [ip, "None"] # Setup hacker/target array
+
 def push_data():
     while True:
         s = socket.socket()
@@ -39,14 +43,17 @@ def push_data():
         conns = s.recv(1024)
         s.close()
 
-        print relay
-        print conns
+        #print relay
+        #print conns
         for key in sessions.keys():
             host, target = key.split("--")
             hacker = [s for s in hackers if host in s]
             if hacker:
                 h, ip = hacker[0]
-                
+                for i, _ in enumerate(teams):
+                    for a, ip in enumerate(teams[i][1]):
+                        if target in teams[i][1][a]:
+                            teams[i][1][a] = [ip[0], h]
 
         time.sleep(5)
 
@@ -68,6 +75,7 @@ def index():
     if sess_thread is None:
         sess_thread = Thread(target=push_sessions)
         sess_thread.start()
+        print "STARTED THREAD"
 
     return render_template('index.html', teams=teams, hackers=hackers)
 
