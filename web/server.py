@@ -14,7 +14,6 @@ args = parser.parse_args()
 
 app = Flask(__name__)
 app.debug = True
-app.config['SECRET_KEY'] = 'r3dteam'
 socketio = SocketIO(app)
 
 sess_thread = None
@@ -23,6 +22,7 @@ relay_server = "127.0.0.1"
 relay_port = 444
 teams = []   # [team, ips]
 hackers = [] # [hacker, ip]
+hacker_colors = ('#bf5b5b', '#c6b955', '#86b460', '#3c8d88', '#a76443', '#5273aa', '#973291', '#e53e45', '#7dad13', '#066d9b', '#3b060f', '#104a3e', '#798c2a')
 sessions = {}
 
 for x in range(1, args.num+1):
@@ -30,7 +30,7 @@ for x in range(1, args.num+1):
 
 for i,_ in enumerate(teams): 
     for a, ip in enumerate(teams[i][1]):
-        teams[i][1][a] = [ip, "None"] # Setup hacker/target array
+        teams[i][1][a] = [ip, "None", None] # Setup hacker/target array
 
 def push_data():
     while True:
@@ -49,11 +49,18 @@ def push_data():
             host, target = key.split("--")
             hacker = [s for s in hackers if host in s]
             if hacker:
-                h, ip = hacker[0]
+                h, hacker_ip, color = hacker[0]
                 for i, _ in enumerate(teams):
                     for a, ip in enumerate(teams[i][1]):
                         if target in teams[i][1][a]:
-                            teams[i][1][a] = [ip[0], h]
+                            teams[i][1][a] = [ip[0], h, color]
+
+        data = {}
+        for team, ips in teams:
+            for ip, hacker, color in ips:
+                data[ip] = color
+
+        socketio.emit('team_data', data, namespace='/sessions')
 
         time.sleep(5)
 
@@ -89,9 +96,8 @@ def servecss(path):
 
 @socketio.on('add_hacker', namespace='/sessions')
 def add_hacker(msg):
-    hackers.append([msg['hacker'], msg['ip']])
-    emit("team_data", {hackers[-1][0]:hackers[-1][1]}, broadcast=True)
-
+    hackers.append([msg['hacker'], msg['ip'], hacker_colors[len(hackers)]])
+    emit("hacker_data", {hackers[-1][0]:hackers[-1][1] + "," +  hackers[-1][2]}, broadcast=True)
 
 if __name__ == '__main__':
     main_thread = Thread(target=push_data)
