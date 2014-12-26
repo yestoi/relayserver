@@ -14,6 +14,8 @@ args = parser.parse_args()
 
 app = Flask(__name__)
 app.debug = True
+app.jinja_env.lstrip_blocks = True
+app.jinja_env.trim_blocks = True
 socketio = SocketIO(app)
 
 sess_thread = None

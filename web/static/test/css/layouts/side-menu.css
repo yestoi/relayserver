@@ -1,7 +1,6 @@
 body {
     color: #777;
 	background-color:#232B24;
-	line-height: 14px;
 }
 
 .pure-img-responsive {
@@ -62,22 +61,41 @@ The content `<div>` is where all your content goes.
     line-height: 1.6em;
 }
 */
-	/*
 .content {
-	max-width: 100%;
+	padding: 5px 5px;
 }
-*/
 
 #sessions, #teams { 
 	background: #232B24;
 }
 
+#sessgrid {
+	position: relative;
+}
+
+/* I do this weird. */
 #sessgrid div {
 	font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
+	background-color: #232B24;
 	color: green;
-	margin: 5px;
 	overflow: hidden;
 	font-size:11px;
+	padding: 5px;
+	z-index: 10;
+	position: relative;
+	transform-origin: 0% 0%;
+}
+
+#sessgrid div:after {
+	background-color: #080808;
+	content: '';
+	display: block;
+	position: absolute;
+	top: 5px;
+	left: 5px;
+	right: 5px;
+	bottom: 5px;
+	z-index: -1;
 }
 
 #sessgrid pre, H2 {
@@ -89,9 +107,6 @@ The content `<div>` is where all your content goes.
     padding: 1em 1em 0;
 }
 
-fieldset {
-	position: relative;
-}
 .hackers {
 	position: relative;
 	width: 80%;

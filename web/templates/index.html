@@ -8,28 +8,11 @@
 <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.5.0/pure-min.css">
 <link rel="stylesheet" href="css/layouts/side-menu.css">
 
-<script type="text/javascript" src="//code.jquery.com/jquery-1.6.1.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
 <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.16/socket.io.min.js"></script>
-<script type="text/javascript" src="js/jquery.nested.js"></script>
-<script type="text/javascript" src="js/makeboxes.js"></script>
 <script> 
 $(document).ready(function() {
-	/*
-		$("#sessions").nested({
-				gutter: 5,
-				minWidth: 75,
-				resizeToFit: false,
-				animate: false,
-				animationOptions: {
-					speed: 300,
-					duration: 200,
-					queue: false 
-				}
-		});
-		*/
-
 		$('.invisible').hide(); 
-		$('#init').remove();
 
 		var socket = io.connect('http://' + document.domain + ':' + location.port + '/sessions');
 
@@ -45,26 +28,19 @@ $(document).ready(function() {
 					box.id = keyid;
 					box.className = 'box pure-u-1-4';
 
-					$('#sessgrid').append(box)
+					$('#sessgrid').append(box);
 					sess.push(keyid);
 				}
 
 				$("#" + keyid).empty();
 				$("#" + keyid).append("<H2>" + title + "</H2>");
 				$("#" + keyid).append("<pre>" + data[key] + "</pre>");
-				/*
-				<!--
-				if ($.inArray(keyid, sess) > -1) {
-					$("#" + keyid).empty();
-					$("#" + keyid).append("<H2>" + title + "</H2>");
-					$("#" + keyid).append("<pre>" + data[key] + "</pre>");
-				}
-				else {
-					var box = makeBoxes(1, 54, keyid);
-					$('#sessions').append(box).nested('append', box);
-					sess.push(keyid);
-				}
-				--> */
+				$("#" + keyid).click(function() {
+					$(this).css({transform: 'scale(2)', zIndex:'20'});
+					$(this).click(function() {
+						$(this).css({transform: 'scale(1)', zIndex:'10'});
+					});
+				});
 			}
 		}});
 
@@ -74,7 +50,7 @@ $(document).ready(function() {
 				var html = "<p><strong style=\"color:" + d[1] + "\">";
 				html += key + "</strong><span style=\"font-size:22px;color:" + d[1] + "\">";
 				html += " - " + d[0] + "</span></p>";
-				$(".hackers").append(html)	
+				$(".hackers").append(html);	
 			}
 		});
 
@@ -88,7 +64,6 @@ $(document).ready(function() {
 			}
 		});
 				
-
 		$("#hackerform").submit(function() {
 			socket.emit('add_hacker', {hacker: $("#hacker").val(), ip: $("#hackerip").val()});
 		});
@@ -96,32 +71,18 @@ $(document).ready(function() {
 		hideAll = function() {
 			$("div.menuitem").hide();
 			$("li").removeClass("pure-menu-selected");
-			}
+		}
 
-		$("li.teams").click(function() {
-			hideAll();
-			$("#teams").show();
-			$("li.teams").addClass("pure-menu-selected");
+		$("#menu li").each(function() {
+			$(this).click(function() {
+				$("li").removeClass("pure-menu-selected");
+				$("div.menuitem").hide();
+
+				$(this).addClass("pure-menu-selected");
+				var item = $(this).attr('class').split(" ")[0];
+				$("#" + item).show();
+			});
 		});
-
-		$("li.sessions").click(function() {
-			hideAll();
-			$("#sessions").show();
-			$("li.sessions").addClass("pure-menu-selected");
-		});
-
-		$("li.relays").click(function() {
-			hideAll();
-			$("#relays").show();
-			$("li.relays").addClass("pure-menu-selected");
-		});
-
-		$("li.jobs").click(function() {
-			hideAll();
-			$("#jobs").show();
-			$("li.jobs").addClass("pure-menu-selected");
-		});
-
 });
 </script>
 
@@ -150,55 +111,52 @@ $(document).ready(function() {
 
     <div id="main">
       <div class="content">
-				<div id="teams" class="invisible menuitem">
-					<div class="pure-g">
-						<div class="pure-u-1-2 l-box" style="position: relative">
-							<form id="hackerform">
-								<fieldset>
-									<legend>Add a hacker</legend>
-									<input id="hacker" type="name" placeholder="Name">
-									<input id="hackerip" list="ip"> 
-									<datalist id="ip">
-										<option value="192.168.1.5">
-										<option value="192.168.5.5">
-									</datalist>
-									<button type="submit" class="pure-button pure-button-primary">Add</button>
-								</fieldset>
-							</form>
 
-							<div class="hackers">
-								{% for hacker, ip, color in hackers %}
-								<p><strong style="color:{{color}}">{{hacker}}</strong><span style="font-size:22px;color:{{color}}"> - {{ip}}</span></p>
-								{% endfor %}
-							</div>
-						</div>
-						<div class="pure-u-1-2 l-box">
-							<div id="teamgrid" class="pure-g">
-								{% for team, ips in teams %}
-								<div class="pure-u-1-2">
-									<h2>{{ team }}</h2>
-									<ul>
-									{% for ip, hacker, color in ips %}
-									<li id="{{ip}}" style="color:{{color}}">{{ ip }}</li> <!-- {{hacker}} -->
-									{% endfor %}
-									</ul>
-								</div>
-								{% endfor %}
-							</div>
-						</div>
+		<div id="teams" class="invisible menuitem pure-g">
+			<div class="pure-u-1-2 l-box" style="position: relative">
+				<form id="hackerform">
+					<fieldset>
+						<legend>Add a hacker</legend>
+						<input id="hacker" type="name" placeholder="Name">
+						<input id="hackerip" list="ip"> 
+						<datalist id="ip">
+							<option value="192.168.1.5">
+							<option value="192.168.5.5">
+						</datalist>
+						<button type="submit" class="pure-button pure-button-primary">Add</button>
+					</fieldset>
+				</form>
+				<div class="hackers">
+					{% for hacker, ip, color in hackers %}
+					<p><strong style="color:{{color}}">{{hacker}}</strong><span style="font-size:22px;color:{{color}}"> - {{ip}}</span></p>
+					{% endfor %}
+				</div>
+			</div>
+			<div class="pure-u-1-2 l-box">
+				<div id="teamgrid" class="pure-g">
+					{% for team, ips in teams %}
+					<div class="pure-u-1-2">
+						<h2>{{ team }}</h2>
+						<ul>
+						{% for ip, hacker, color in ips %}
+						<li id="{{ip}}" style="color:{{color}}">{{ ip }}</li> <!-- {{hacker}} -->
+						{% endfor %}
+						</ul>
 					</div>
+					{% endfor %}
 				</div>
+			</div>
+		</div>
 
-				<div id="sessions" class="menuitem">
-					<div id="sessgrid" class="pure-g"></div>
-				</div>
+		<div id="sessions" class="menuitem">
+			<div id="sessgrid" class="pure-g"></div>
+		</div>
 
-				<div id="relays" class="invisible menuitem">
-				</div>
+		<div id="relays" class="invisible menuitem">
+		</div>
 
-				<div id="jobs" class="invisible menuitem">
-				</div>
-
+		<div id="jobs" class="invisible menuitem">
+		</div>
 
         </div>
     </div>
