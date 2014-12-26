@@ -102,4 +102,4 @@ def add_hacker(msg):
 if __name__ == '__main__':
     main_thread = Thread(target=push_data)
     main_thread.start()
-    socketio.run(app)
+    socketio.run(app, host="0.0.0.0")

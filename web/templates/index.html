@@ -14,6 +14,7 @@
 <script type="text/javascript" src="js/makeboxes.js"></script>
 <script> 
 $(document).ready(function() {
+	/*
 		$("#sessions").nested({
 				gutter: 5,
 				minWidth: 75,
@@ -25,6 +26,7 @@ $(document).ready(function() {
 					queue: false 
 				}
 		});
+		*/
 
 		$('.invisible').hide(); 
 		$('#init').remove();
@@ -39,8 +41,11 @@ $(document).ready(function() {
 				var title = key.replace("--", " -> ");
 
 				if ($.inArray(keyid, sess) <= -1) {
-					var box = makeBoxes(1, 54, keyid);
-					$('#sessions').append(box).nested('append', box);
+					var box = document.createElement('div');
+					box.id = keyid;
+					box.className = 'box pure-u-1-4';
+
+					$('#sessgrid').append(box)
 					sess.push(keyid);
 				}
 
@@ -145,7 +150,6 @@ $(document).ready(function() {
 
     <div id="main">
       <div class="content">
-
 				<div id="teams" class="invisible menuitem">
 					<div class="pure-g">
 						<div class="pure-u-1-2 l-box" style="position: relative">
@@ -186,7 +190,7 @@ $(document).ready(function() {
 				</div>
 
 				<div id="sessions" class="menuitem">
-				  <div id="init" class="box size44"></div>
+					<div id="sessgrid" class="pure-g"></div>
 				</div>
 
 				<div id="relays" class="invisible menuitem">
