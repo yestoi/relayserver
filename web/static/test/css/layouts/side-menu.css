@@ -107,6 +107,14 @@ The content `<div>` is where all your content goes.
     padding: 1em 1em 0;
 }
 
+#sessgrid div:nth-child(4n+4) {
+	transform-origin: 100% 0%;
+}
+
+#sessgrid div:nth-child(4n-1) {
+	transform-origin: 100% 0%;
+}
+
 .hackers {
 	position: relative;
 	width: 80%;
@@ -152,38 +160,6 @@ prompt:before {
        -o-transition-property: left, right, top;
           transition-property: left, right, top;
 
-}
-
-.cmd {
-	display: inline-block;
-	padding: 0;
-	margin: 0;
-	height: 1.3em;
-	width: 100%;
-}
-
-.prompt {
-	font-size: 12px;
-	float: left;
-	cursor: auto;
-	box-sizing: border-box;
-	line-height: 14px;
-	display: block;
-	height: 14px;
-}
-
-.clipboard {
-	position: absolute;
-	bottom: 0;
-	left: 0;
-	opacity: 0.01;
-	filter: alpha(opacity = 0.01);
-	filter: progid:DXImageTransform.Microsoft.Alpha(opacity=0.01);
-	width: 2px;
-}
-
-.cmd > .clipboard {
-	position: fixed;
 }
 
 
