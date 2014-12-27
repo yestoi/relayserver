@@ -30,17 +30,27 @@ $(document).ready(function() {
 
 					$('#sessgrid').append(box);
 					sess.push(keyid);
+
+
+					$("#" + keyid).append("<H2>" + title + "</H2>");
+					$("#" + keyid).append("<pre>" + data[key] + "</pre>");
+
+					$("#" + keyid).click(function() {
+						$(this).append('<prompt><input type="text"></prompt>');
+						$(this).css({transform: 'scale(2)', zIndex:'20'});
+
+						$(this).click(function() {
+							$(this).css({transform: 'scale(1)', zIndex:'10'});
+							$("prompt").remove();
+						});
+
+						$("prompt input").focus();
+					});
+
 				}
 
-				$("#" + keyid).empty();
-				$("#" + keyid).append("<H2>" + title + "</H2>");
-				$("#" + keyid).append("<pre>" + data[key] + "</pre>");
-				$("#" + keyid).click(function() {
-					$(this).css({transform: 'scale(2)', zIndex:'20'});
-					$(this).click(function() {
-						$(this).css({transform: 'scale(1)', zIndex:'10'});
-					});
-				});
+				//$("#" + keyid + " pre").empty();
+				$("#" + keyid + " pre").text(data[key]);
 			}
 		}});
 
@@ -66,6 +76,12 @@ $(document).ready(function() {
 				
 		$("#hackerform").submit(function() {
 			socket.emit('add_hacker', {hacker: $("#hacker").val(), ip: $("#hackerip").val()});
+		});
+
+		$("prompt input").keypress(function(e) {
+			if (e.which == 13) {
+				socket.emit('shell_cmd', {session: "Test", cmd: "whoami"});
+			}
 		});
 
 		hideAll = function() {

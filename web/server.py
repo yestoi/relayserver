@@ -101,6 +101,10 @@ def add_hacker(msg):
     hackers.append([msg['hacker'], msg['ip'], hacker_colors[len(hackers)]])
     emit("hacker_data", {hackers[-1][0]:hackers[-1][1] + "," +  hackers[-1][2]}, broadcast=True)
 
+@socketio.on('shell_cmd', namespace='/sessions')
+def shell_cmd(msg):
+    print msg['session'] + " : " + msg['cmd']
+
 if __name__ == '__main__':
     main_thread = Thread(target=push_data)
     main_thread.start()
