@@ -13,7 +13,6 @@ NETCAT = '/bin/nc'
 PROMPT = r'# $' #default shell prompt
 
 class Listener(LineReceiver):
-
     def __init__(self, hosts, sched, conn, jobs):
         self.hosts = hosts  # List of called in hosts    [host, time]
         self.sched = sched  # List of scheduled relays   [host, target, port, count]
@@ -161,6 +160,15 @@ class Control(recvline.HistoricRecvLine):
             if relay_m.group(relay_m.lastindex) == "":
                 c, host, target, port = line.split() 
                 listener.sched.append([host, target, port, 1])
+
+        elif cmd == "tap":
+            host, target = line.split()[1].split("--")
+            data = " ".join(line.split()[2:])
+
+            for h, t, p, nc in listener.conn:
+                if host == h and target == t:
+                    nc.outReceived(data + "\n")
+                    nc.transport.write(data + "\n")
 
         elif cmd == "help":
             self.terminal.write("Just 'show' and 'add' commands at the moment.\nadd <target> <host> <port>\n\nex. 'show' or 'show relay'\nex. 'add 172.25.20.11 10.0.0.101 53'")
