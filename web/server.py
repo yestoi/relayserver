@@ -8,7 +8,7 @@ import time, pdb, os, argparse, gevent, socket, re
 parser = argparse.ArgumentParser()
 parser.add_argument("num", help="Number of teams", type=int)
 parser.add_argument("ips", help="List of ips comma seperated with 'x' in place of team offset")
-parser.add_argument("oct", help="Starting team octect", type=int)
+parser.add_argument("octet", help="Starting team octet", type=int)
 args = parser.parse_args()
 
 app = Flask(__name__)
@@ -26,8 +26,10 @@ sessions = {}
 hackers = [] # [hacker, ip]
 hacker_colors = ('#bf5b5b', '#c6b955', '#86b460', '#3c8d88', '#a76443', '#5273aa', '#973291', '#e53e45', '#7dad13', '#066d9b', '#3b060f', '#104a3e', '#798c2a')
 
-for x in range(1, args.num+1):
-    teams.append(["Team " + str(x), args.ips.replace("x", str(x)).split(",")])
+i = 0
+for x in range(args.octet, args.octet+args.num+1):
+    i += 1
+    teams.append(["Team " + str(i), args.ips.replace("x", str(x)).split(",")])
 
 for i,_ in enumerate(teams): 
     for a, ip in enumerate(teams[i][1]):
@@ -41,20 +43,22 @@ def push_data():
         s.recv(1024)
         s.send("show relay")
         relay = s.recv(1024)
+        print "|relay|" + relay + "||"
         s.send("show")
         conns = s.recv(1024)
+        print "|conn|" + conns + "||"
         s.close()
 
         #print relay
         #print conns
         for key in sessions.keys():
             host, target = key.split("--")
-            hacker = [s for s in hackers if host in s]
+            hacker = [s for s in hackers if target in s]
             if hacker:
                 h, hacker_ip, color = hacker[0]
                 for i, _ in enumerate(teams):
                     for a, ip in enumerate(teams[i][1]):
-                        if target in teams[i][1][a]:
+                        if host in teams[i][1][a]:
                             teams[i][1][a] = [ip[0], h, color]
 
         data = {}

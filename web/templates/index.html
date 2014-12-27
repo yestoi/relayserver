@@ -121,7 +121,7 @@ $(document).ready(function() {
 
             <ul>
                 <li class="teams"><a href="#">Teams</a></li>
-                <li class="sessions menu-item-divided pure-menu-selected"><a href="#">Sessions</a></li>
+                <li class="sessions pure-menu-selected"><a href="#">Sessions</a></li>
 				<li class="relays"><a href="#">Relays</a></li>
                 <li class="jobs"><a href="#">Jobs</a></li>
                 <li class="chat"><a href="#">Chat</a></li>
@@ -172,7 +172,32 @@ $(document).ready(function() {
 			<div id="sessgrid" class="pure-g"></div>
 		</div>
 
-		<div id="relays" class="invisible menuitem">
+		<div id="relays" class="invisible menuitem pure-g">
+			<div class="pure-u-1-2 l-box">
+				<form class="pure-form pure-form-stacked">
+					<fieldset>
+						<legend>Add Relay</legend>
+
+						<label for="host">Infected IP</label>
+						<input id="host" list="h_ip">
+						<datalist id="host">
+						</datalist>
+
+						<label for="target">Listener IP</label>
+						<input id="target" list="t_ip">
+						<datalist id="target">
+						</datalist>
+
+						<label for="port">Port</label>
+						<input id="port">
+						<button type="submit" class="pure-button pure-button-primary">Add</button>
+					</fieldset>
+				</form>
+				<div id="relaygrid">relaygrid</div>
+			</div>
+			<div class="pure-u-1-2 l-box">
+				Connection list
+			</div>
 		</div>
 
 		<div id="jobs" class="invisible menuitem">
