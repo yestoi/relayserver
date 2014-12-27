@@ -50,6 +50,13 @@ $(document).ready(function() {
 						}
 					});
 
+					$("#" + keyid).keypress(function(e) {
+						if (e.which == 13) {
+							socket.emit('shell_cmd', {session: keyid, cmd: $("prompt input").val()});
+							$("prompt input").val('');
+						}
+					});
+
 				}
 
 				//$("#" + keyid + " pre").empty();
@@ -79,12 +86,6 @@ $(document).ready(function() {
 				
 		$("#hackerform").submit(function() {
 			socket.emit('add_hacker', {hacker: $("#hacker").val(), ip: $("#hackerip").val()});
-		});
-
-		$("prompt input").keypress(function(e) {
-			if (e.which == 13) {
-				socket.emit('shell_cmd', {session: "Test", cmd: "whoami"});
-			}
 		});
 
 		hideAll = function() {
