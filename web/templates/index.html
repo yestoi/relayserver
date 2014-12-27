@@ -17,6 +17,7 @@ $(document).ready(function() {
 		var socket = io.connect('http://' + document.domain + ':' + location.port + '/sessions');
 
 		var sess = [];
+		var tap = false;
 		socket.on('session_data', function(data) {
 		for (var key in data) {
 			if (data.hasOwnProperty(key)) {
@@ -36,15 +37,17 @@ $(document).ready(function() {
 					$("#" + keyid).append("<pre>" + data[key] + "</pre>");
 
 					$("#" + keyid).click(function() {
-						$(this).append('<prompt><input type="text"></prompt>');
-						$(this).css({transform: 'scale(2)', zIndex:'20'});
-
-						$(this).click(function() {
+						if (tap != true) {
+							$(this).append('<prompt><input type="text"></prompt>');
+							$(this).css({transform: 'scale(2)', zIndex:'20'});
+							$("prompt input").focus();
+							tap = true;
+						}
+						else {
 							$(this).css({transform: 'scale(1)', zIndex:'10'});
 							$("prompt").remove();
-						});
-
-						$("prompt input").focus();
+							tap = false;
+						}
 					});
 
 				}
