@@ -50,17 +50,6 @@ This is the parent `<div>` that contains the menu and the content area.
         #layout.active .menu-link {
             left: 300px;
         }
-/*
-The content `<div>` is where all your content goes.
-*/
-	/*
-.content {
-    margin: 0 auto;
-    padding: 0 1em;
-    max-width: 800px;
-    line-height: 1.6em;
-}
-*/
 .content {
 	padding: 5px 5px;
 }
@@ -113,6 +102,17 @@ The content `<div>` is where all your content goes.
 
 #sessgrid div:nth-child(4n-1) {
 	transform-origin: 100% 0%;
+}
+
+#connlist {
+	border: 2px solid;
+	border-radius: 20px;
+	background: #191818;
+	padding: 20px;
+	height: 800px;
+	width: 90%;
+	font-size: 150%;
+	overflow: auto;
 }
 
 .hackers {
@@ -216,10 +216,12 @@ appears on the left side of the page.
     /*
     This styles the selected menu item `<li>`.
     */
-    #menu .pure-menu-selected,
-    #menu .pure-menu-heading {
-        background: #1f8dd6;
+    #menu .pure-menu-selected /*,
+    #menu .pure-menu-heading */ {
+        /*background: #1f8dd6; */
+		background: #232B24;
     }
+	#menu .pure-menu-heading { background: #1f8dd6; }
         /*
         This styles a link within a selected menu item `<li>`.
         */

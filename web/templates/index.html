@@ -9,13 +9,15 @@
 <link rel="stylesheet" href="css/layouts/side-menu.css">
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+<script src="js/jquery.nicescroll.min.js"></script>
 <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.16/socket.io.min.js"></script>
 <script> 
 $(document).ready(function() {
 		$('.invisible').hide(); 
 
-		var socket = io.connect('http://' + document.domain + ':' + location.port + '/sessions');
+		$("#connlist").niceScroll({cursorcolor:"#00F"}).hide();
 
+		var socket = io.connect('http://' + document.domain + ':' + location.port + '/sessions'); 
 		var sess = [];
 		var tap = false;
 		socket.on('session_data', function(data) {
@@ -95,7 +97,8 @@ $(document).ready(function() {
 
 		socket.on('conn_data', function(data) {
 			for (var key in data) {
-				$("#connlist").append("<p>" + data[key] + "</p>");
+				var d = data[key].split(",");
+				$("#connlist").append("<p><" + d[1] + "> " + d[0]);
 			}
 		});
 		
@@ -108,6 +111,10 @@ $(document).ready(function() {
 									target: $("#rtarget").val(), 
 									  port: $("#rport").val()});
 			// Add busy screen
+		});
+
+		$("#connlist").click(function() {
+			$("#connlist").append("<p>HEY HEY HEY HEY HEY</p>");
 		});
 
 		hideAll = function() {
@@ -156,14 +163,15 @@ $(document).ready(function() {
 
 		<div id="teams" class="invisible menuitem pure-g">
 			<div class="pure-u-1-2 l-box" style="position: relative">
-				<form id="hackerform">
+				<form id="hackerform" autocomplete="off">
 					<fieldset>
 						<legend>Add a hacker</legend>
 						<input id="hacker" type="name" placeholder="Name">
 						<input id="hackerip" list="ip"> 
 						<datalist id="ip">
-							<option value="192.168.1.5">
-							<option value="192.168.5.5">
+							{% for hacker, ip, color in hackers %}
+							<option value="{{ip}}">
+							{% endfor %}
 						</datalist>
 						<button type="submit" class="pure-button pure-button-primary">Add</button>
 					</fieldset>
@@ -196,18 +204,24 @@ $(document).ready(function() {
 
 		<div id="relays" class="invisible menuitem pure-g">
 			<div class="pure-u-1-2 l-box">
-				<form id="relayform" class="pure-form pure-form-stacked">
+				<form id="relayform" class="pure-form pure-form-stacked" autocomplete="off">
 					<fieldset>
-						<legend>Add Relay</legend>
+						<legend style="color:white">Add Relay</legend>
 
 						<label for="host">Infected IP</label>
 						<input id="rhost" list="h_ip">
-						<datalist id="host">
+						<datalist id="h_ip">
+							{% for target, date in conns %}
+							<option value="{{target}}">
+							{% endfor %}
 						</datalist>
 
 						<label for="target">Listener IP</label>
 						<input id="rtarget" list="t_ip">
-						<datalist id="target">
+						<datalist id="t_ip">
+							{% for ip, hacker, color in ips %}
+							<option value="{{ip}}">
+							{% endfor %}
 						</datalist>
 
 						<label for="port">Port</label>
@@ -217,7 +231,8 @@ $(document).ready(function() {
 				</form>
 				<div id="relaygrid"></div>
 			</div>
-			<div id="connlist" class="pure-u-1-2 l-box">
+			<div class="pure-u-1-2 l-box">
+				<div id="connlist"></div>
 			</div>
 		</div>
 

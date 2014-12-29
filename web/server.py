@@ -12,6 +12,7 @@ relay_server = "127.0.0.1"
 relay_port = 444
 teams = []   # [team, ips]
 sessions = {}
+connects = [] # [time, ip]
 hackers = [] # [hacker, ip]
 hacker_colors = ('#bf5b5b', '#c6b955', '#86b460', '#3c8d88', '#a76443', '#5273aa', '#973291', '#e53e45', '#7dad13', '#066d9b', '#3b060f', '#104a3e', '#798c2a')
 
@@ -72,6 +73,8 @@ def push_data():
         for line in conns.split('\n'):
             if line:
                 cdata.append(line)
+                date, ip = line.split(',')
+                connects.append([date, ip]) # Global varible for connections
 
         if prev_tdata != tdata:
             socketio.emit('team_data', tdata, namespace='/sessions') 
@@ -122,7 +125,7 @@ def index():
         sess_thread.start()
         print "STARTED THREAD"
 
-    return render_template('index.html', teams=teams, hackers=hackers)
+    return render_template('index.html', teams=teams, hackers=hackers, conns=connects)
 
 @app.route('/js/<path:path>')
 def servejs(path):
