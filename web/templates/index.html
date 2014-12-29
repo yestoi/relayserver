@@ -83,9 +83,31 @@ $(document).ready(function() {
 				});
 			}
 		});
-				
+
+		socket.on('relay_data', function(data) {
+			$("#relaygrid").empty();
+			for (var key in data) {
+				var d = data[key].split(",");
+				var html = "<p>" + key + " --> " + d[0] + ":" + d[1] + "</p>";
+				$("#relaygrid").append(html);
+			}
+		});
+
+		socket.on('conn_data', function(data) {
+			for (var key in data) {
+				$("#connlist").append("<p>" + data[key] + "</p>");
+			}
+		});
+		
 		$("#hackerform").submit(function() {
 			socket.emit('add_hacker', {hacker: $("#hacker").val(), ip: $("#hackerip").val()});
+		});
+
+		$("#relayform").submit(function() {
+			socket.emit('add_relay', {host: $("#rhost").val(), 
+									target: $("#rtarget").val(), 
+									  port: $("#rport").val()});
+			// Add busy screen
 		});
 
 		hideAll = function() {
@@ -174,29 +196,28 @@ $(document).ready(function() {
 
 		<div id="relays" class="invisible menuitem pure-g">
 			<div class="pure-u-1-2 l-box">
-				<form class="pure-form pure-form-stacked">
+				<form id="relayform" class="pure-form pure-form-stacked">
 					<fieldset>
 						<legend>Add Relay</legend>
 
 						<label for="host">Infected IP</label>
-						<input id="host" list="h_ip">
+						<input id="rhost" list="h_ip">
 						<datalist id="host">
 						</datalist>
 
 						<label for="target">Listener IP</label>
-						<input id="target" list="t_ip">
+						<input id="rtarget" list="t_ip">
 						<datalist id="target">
 						</datalist>
 
 						<label for="port">Port</label>
-						<input id="port">
+						<input id="rport">
 						<button type="submit" class="pure-button pure-button-primary">Add</button>
 					</fieldset>
 				</form>
-				<div id="relaygrid">relaygrid</div>
+				<div id="relaygrid"></div>
 			</div>
-			<div class="pure-u-1-2 l-box">
-				Connection list
+			<div id="connlist" class="pure-u-1-2 l-box">
 			</div>
 		</div>
 

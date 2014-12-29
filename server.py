@@ -144,12 +144,6 @@ class Control(recvline.HistoricRecvLine):
                         self.terminal.write(host + " > " + target + ":" + port + "\n")
             else:
                 if listener.hosts:
-                    teams = []
-                    for host, date in listener.hosts:
-                        m = re.search(r'[0-9]{1,3}\.[0-9]{1,3}\.([0-9]{1,3})\.[0-9]{1,3}', host)
-                        if m.group(1): teams.append(m.group(1))
-                    
-                    self.terminal.write(str(len(listener.hosts)) + " targets across " + str(len(set(teams))) + " teams:\n")
                     for host, date in listener.hosts:
                         self.terminal.write(str(host) + "," + date.strftime("%I:%M%p") + "\n")
                 else:

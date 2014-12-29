@@ -5,20 +5,9 @@ from flask.ext.socketio import SocketIO, emit
 from threading import Thread 
 import time, pdb, os, argparse, gevent, socket, re
 
-parser = argparse.ArgumentParser()
-parser.add_argument("num", help="Number of teams", type=int)
-parser.add_argument("ips", help="List of ips comma seperated with 'x' in place of team offset")
-parser.add_argument("octet", help="Starting team octet", type=int)
-args = parser.parse_args()
-
-app = Flask(__name__)
-app.debug = True
-app.jinja_env.lstrip_blocks = True
-app.jinja_env.trim_blocks = True
-socketio = SocketIO(app)
-
 sess_thread = None
 main_thread = None
+cmd_queue = []
 relay_server = "127.0.0.1"
 relay_port = 444
 teams = []   # [team, ips]
@@ -26,32 +15,39 @@ sessions = {}
 hackers = [] # [hacker, ip]
 hacker_colors = ('#bf5b5b', '#c6b955', '#86b460', '#3c8d88', '#a76443', '#5273aa', '#973291', '#e53e45', '#7dad13', '#066d9b', '#3b060f', '#104a3e', '#798c2a')
 
-i = 0
-for x in range(args.octet, args.octet+args.num+1):
-    i += 1
-    teams.append(["Team " + str(i), args.ips.replace("x", str(x)).split(",")])
+app = Flask(__name__)
+app.debug = True
+app.jinja_env.lstrip_blocks = True
+app.jinja_env.trim_blocks = True
+socketio = SocketIO(app)
 
-for i,_ in enumerate(teams): 
-    for a, ip in enumerate(teams[i][1]):
-        teams[i][1][a] = [ip, "None", None] # Setup hacker/target array
+# Threaded functions
 
 def push_data():
-    prev_data = {}
+    prev_tdata = {}
+    prev_rdata = {}
+    prev_cdata = []
+    init_loop = 2
+    global cmd_queue
+
     while True:
         s = socket.socket()
         s.connect((relay_server, relay_port))
-        s.recv(1024)
+
+        if cmd_queue:
+            for cmd in cmd_queue:
+                s.send(cmd)
+            cmd_queue = []
+
+        s.recv(1024) # Don't care about cmd or init output
         s.send("show relay")
-        relay = s.recv(1024)
-        print "|relay|" + relay + "||"
+        relay = s.recv(1024).replace("\n> ", "")[:-1]
         s.send("show")
-        conns = s.recv(1024)
-        print "|conn|" + conns + "||"
+        conns = s.recv(1024).replace("\n> ", "")[:-1]
+
         s.close()
 
-        #print relay
-        #print conns
-        for key in sessions.keys():
+        for key in sessions.keys(): 
             host, target = key.split("--")
             hacker = [s for s in hackers if target in s]
             if hacker:
@@ -59,29 +55,52 @@ def push_data():
                 for i, _ in enumerate(teams):
                     for a, ip in enumerate(teams[i][1]):
                         if host in teams[i][1][a]:
-                            teams[i][1][a] = [ip[0], h, color]
+                            teams[i][1][a] = [ip[0], h, color] #Assign hacker color to hosts owned
 
-        data = {}
+        tdata = {}
         for team, ips in teams:
             for ip, hacker, color in ips:
-                data[ip] = color
+                tdata[ip] = color
 
-            if prev_data != data:
-                socketio.emit('team_data', data, namespace='/sessions')
-                prev_data = dict(data)
+        rdata = {}
+        for line in relay.split('\n'):
+            if line:
+                host, target, port = line.replace(' > ', ':').split(':')
+                rdata[host] = target + "," + port
+
+        cdata = []
+        for line in conns.split('\n'):
+            if line:
+                cdata.append(line)
+
+        if prev_tdata != tdata:
+            socketio.emit('team_data', tdata, namespace='/sessions') 
+            prev_tdata = dict(tdata)
+
+        if prev_rdata != rdata or init_loop > 0:
+            socketio.emit('relay_data', rdata, namespace='/sessions') 
+            prev_rdata = dict(rdata)
+
+            if init_loop:
+                init_loop -= 1
+
+        if prev_cdata != cdata:
+            socketio.emit('conn_data', cdata, namespace='/sessions')
+            prev_cdata = list(cdata)
 
         time.sleep(5)
 
 def push_sessions():
     prev_sessions = {}
-    init_loop = 2
+    init_loop = 2 #Push data 2 times initially
+
     while True:
         files = list(os.walk('../sessions'))[0][2]
         global sessions 
 
         for f in files:
             fd = open('../sessions/' + f, 'r')
-            sessions[f] = "".join(fd.readlines()[-19:])
+            sessions[f] = "".join(fd.readlines()[-19:]) #Grab last 19 lines of session
             fd.close()
 
         if prev_sessions != sessions or init_loop > 0:
@@ -92,6 +111,8 @@ def push_sessions():
                 init_loop -= 1
 
         time.sleep(1)
+
+# Flask Handlers
 
 @app.route('/')
 def index():
@@ -111,10 +132,16 @@ def servejs(path):
 def servecss(path):
     return send_file('static/test/' + os.path.join('css', path))
 
+# SocketIO Handlers
+
 @socketio.on('add_hacker', namespace='/sessions')
 def add_hacker(msg):
     hackers.append([msg['hacker'], msg['ip'], hacker_colors[len(hackers)]])
     emit("hacker_data", {hackers[-1][0]:hackers[-1][1] + "," +  hackers[-1][2]}, broadcast=True)
+
+@socketio.on('add_relay', namespace='/sessions')
+def add_relay(msg):
+    cmd_queue.append("add " + msg['host'] + " " + msg['target'] + " " + msg['port'])
 
 @socketio.on('shell_cmd', namespace='/sessions')
 def shell_cmd(msg):
@@ -125,6 +152,21 @@ def shell_cmd(msg):
     s.close()
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("num", help="Number of teams", type=int)
+    parser.add_argument("ips", help="List of ips comma seperated with 'x' in place of team offset")
+    parser.add_argument("octet", help="Starting team octet", type=int)
+    args = parser.parse_args()
+
+    i = 0
+    for x in range(args.octet, args.octet+args.num): #Build Team structure
+        i += 1
+        teams.append(["Team " + str(i), args.ips.replace("x", str(x)).split(",")])
+
+    for i,_ in enumerate(teams): 
+        for a, ip in enumerate(teams[i][1]):
+            teams[i][1][a] = [ip, "None", None] # Setup hacker/target array
+    
     main_thread = Thread(target=push_data)
     main_thread.start()
     socketio.run(app, host="0.0.0.0")
