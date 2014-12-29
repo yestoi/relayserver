@@ -15,7 +15,7 @@
 $(document).ready(function() {
 		$('.invisible').hide(); 
 
-		$("#connlist").niceScroll({cursorcolor:"#00F"}).hide();
+		$("#connlist").niceScroll({cursorcolor:"#00F"}).hide(); 
 
 		var socket = io.connect('http://' + document.domain + ':' + location.port + '/sessions'); 
 		var sess = [];
@@ -114,7 +114,7 @@ $(document).ready(function() {
 		});
 
 		$("#connlist").click(function() {
-			$("#connlist").append("<p>HEY HEY HEY HEY HEY</p>");
+			$("#connlist").empty();
 		});
 
 		hideAll = function() {

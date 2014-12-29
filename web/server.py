@@ -70,11 +70,11 @@ def push_data():
                 rdata[host] = target + "," + port
 
         cdata = []
-        for line in conns.split('\n'):
-            if line:
-                cdata.append(line)
-                date, ip = line.split(',')
-                connects.append([date, ip]) # Global varible for connections
+        line = conns.split('\n')[-1]
+        if line:
+            cdata.append(line)
+            date, ip = line.split(',')
+            connects.append([date, ip]) # Global varible for connections
 
         if prev_tdata != tdata:
             socketio.emit('team_data', tdata, namespace='/sessions') 

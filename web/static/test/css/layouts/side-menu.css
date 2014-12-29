@@ -110,8 +110,8 @@ This is the parent `<div>` that contains the menu and the content area.
 	background: #191818;
 	padding: 20px;
 	height: 800px;
-	width: 90%;
-	font-size: 150%;
+	/*width: 90%; */
+	font-size: 100%;
 	overflow: auto;
 }
 
