@@ -14,7 +14,7 @@ teams = []   # [team, ips]
 sessions = {}
 connects = [] # [time, ip]
 hackers = [] # [hacker, ip]
-hacker_colors = ('#bf5b5b', '#c6b955', '#86b460', '#3c8d88', '#a76443', '#5273aa', '#973291', '#e53e45', '#7dad13', '#066d9b', '#3b060f', '#104a3e', '#798c2a')
+hacker_colors = ('#86b460', '#c6b955', '#3c8d88', '#a76443', '#5273aa', '#973291', '#bf5b5b', '#7dad13', '#066d9b', '#104a3e', '#798c2a')
 
 app = Flask(__name__)
 app.debug = True
