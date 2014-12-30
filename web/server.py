@@ -71,7 +71,7 @@ def push_data():
 
         cdata = []
         line = conns.split('\n')[-1]
-        if line:
+        if line != "No Connections":
             cdata.append(line)
             date, ip = line.split(',')
             connects.append([date, ip]) # Global varible for connections
