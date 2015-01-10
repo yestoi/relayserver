@@ -1,3 +1,4 @@
+#!/usr/bin/python2
 from gevent import monkey
 monkey.patch_all() 
 from flask import Flask, send_file, render_template, copy_current_request_context
@@ -129,11 +130,11 @@ def index():
 
 @app.route('/js/<path:path>')
 def servejs(path):
-    return send_file('static/test/' + os.path.join('js', path))
+    return send_file('static/' + os.path.join('js', path))
 
 @app.route('/css/<path:path>')
 def servecss(path):
-    return send_file('static/test/' + os.path.join('css', path))
+    return send_file('static/' + os.path.join('css', path))
 
 # SocketIO Handlers
 

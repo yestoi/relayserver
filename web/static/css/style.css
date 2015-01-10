@@ -58,6 +58,12 @@ This is the parent `<div>` that contains the menu and the content area.
 	background: #232B24;
 }
 
+#teamgrid {
+	overflow: auto;
+	height: 900px;
+	font-size: 80%;
+}
+
 #sessgrid {
 	position: relative;
 }
@@ -113,6 +119,19 @@ This is the parent `<div>` that contains the menu and the content area.
 	/*width: 90%; */
 	font-size: 100%;
 	overflow: auto;
+}
+
+#jobs textarea {
+	background: #191818;
+	overflow: auto;
+	resize: none;
+	border: 2px solid;
+}
+
+#jobs select {
+	background: #191818;
+	width: 80%;
+	border: 2px solid;
 }
 
 .hackers {

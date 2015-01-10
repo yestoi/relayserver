@@ -48,9 +48,21 @@ class Listener(LineReceiver):
                         record[3] -= 1
 
         if self.jobs:
-            for shost, job, p, c in self.jobs:
+            for shost, job, prompt, count in self.jobs:
                 if shost == host:
                     self.job = 1
+
+                    if prompt == "nc":
+                        with open(os.getcwd() + "/jobs/" + job) as jobfile:
+                            for line in jobfile.readlines():
+                                self.sendLine(line)
+                        self.transport.loseConnection()
+                        if count == 1:
+                            self.jobs.remove(job)
+                        if count > 1:
+                            job[3] -= 1
+
+
 
         #Kill it if we got nothing for the callback
         if not self.job and not self.nc:
@@ -72,13 +84,14 @@ class Listener(LineReceiver):
                     if re.search(prompt, data): # Found prompt. Lets start sending our job over.
                         with open(os.getcwd() + "/jobs/" + filename) as jobfile:
                             for line in jobfile.readlines():
-                                self.sendLine(line)
+                                obj.sendLine(line)
                         print "Completed " + filename
-                        self.transport.loseConnection()
+                        obj.transport.loseConnection()
                         if count == 1:
-                            self.jobs.remove(job)
+                            obj.jobs.remove(job)
                         if count > 1:
                             job[3] -= 1
+
 
     def connectionLost(self, reason):
         if self.nc != None:
@@ -135,6 +148,7 @@ class Control(recvline.HistoricRecvLine):
     def handle_input(self, line):
         cmd = line.split()[0]
         relay_m = re.search(r'(([0-9]{1,3}\.){3}[0-9]{1,3} ){2}[0-9]{1,5}(.*?)$', line)
+        job_m = re.search(r'job ([0-9]{1,3}\.){3}[0-9]{1,3} (.*?)$', line)
         show_m = re.search(r'(relay|job)', line)
 
         if cmd == "show":
@@ -150,10 +164,38 @@ class Control(recvline.HistoricRecvLine):
                     self.terminal.write("No Connections\n")
 				
         #Add relays with support for additional options
-        elif cmd == "add" and relay_m:
-            if relay_m.group(relay_m.lastindex) == "":
-                c, host, target, port = line.split() 
-                listener.sched.append([host, target, port, 1])
+        elif cmd == "add":
+            if relay_m:
+                if relay_m.group(relay_m.lastindex) == "":
+                    c, host, target, port = line.split() 
+                    listener.sched.append([host, target, port, 1])
+
+            elif job_m:
+                job = job_m.group(2).split()[0]
+                if not isfile("jobs/" + job):
+                    pdb.set_trace()
+                    self.terminal.write("Job does not exist.\n> ")
+                    return
+                
+                if len(line.split()) == 4:
+                    host, job = line.split()[2:]
+                    listener.jobs.append([host, job, PROMPT, 1]) 
+                    print "Added job"
+
+                elif len(line.split()) == 5:
+                    host, job, count = line.split()[2:]
+                    listener.jobs.append([host, job, PROMPT, count])
+                    print "Added job"
+
+                elif len(line.split()) == 6:
+                    host, job, count, prompt = line.split()[2:]
+                    listener.jobs.append([host, job, prompt, count])
+                    print "Added job"
+
+                else:
+                    self.terminal.write("Wtf?\n")
+                    return
+
 
         elif cmd == "tap":
             host, target = line.split()[1].split("--")
