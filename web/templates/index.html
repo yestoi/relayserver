@@ -99,7 +99,7 @@ $(document).ready(function() {
 		socket.on('conn_data', function(data) {
 			for (var key in data) {
 				var d = data[key].split(",");
-				$("#connlist").append("<p><" + d[1] + "> " + d[0]);
+				$(".datalist").append("<p><" + d[1] + "> " + d[0]);
 			}
 		});
 		
@@ -233,24 +233,36 @@ $(document).ready(function() {
 				<div id="relaygrid"></div>
 			</div>
 			<div class="pure-u-1-2 l-box">
-				<div id="connlist"></div>
+				<div id="connlist" class="datalist"></div>
 			</div>
 		</div>
 
 		<div id="jobs" class="invisible menuitem pure-g">
 			<div class="pure-u-1-2 l-box">
-				<div style="width: 80%; float: left">
-					<select id="selectjob" size="10"></select>
+				<div style="float: left; width: 60%;">
+					<select id="selectjob" size="10" class="jobselect"></select>
 				</div>
-				<div style="width:60%">
+				<div>
 					<button class="pure-button">Edit Job</button>
-					<button class="pure-button">New Job</button>
-					<button class="pure-button">Add Job</button>
+					<button id="newjobButton" class="pure-button pure-button-disabled">New Job</button>
 				</div>
+				<div class="l-box">
+					<input id="newjob" placeholder="New Job Name" disabled>
+				</div>
+				<form class="pure-form">
+					<fieldset>
+						<select id="jobhost" placeholder="Target" style="width: 50%;">
+							{% for target, date in conns %}
+							<option value="{{target}}">
+							{% endfor %}
+						</select>
+						<button type="submit" class="pure-button pure-button-disabled">Add Job</button>
+					</fieldset>
+				</form>
 				<textarea cols="75" rows="33"></textarea>
 			</div>
 			<div class="pure-u-1-2 l-box">
-				<div id="connlist"></div>
+				<div id="connlist" class="datalist"></div>
 			</div>
 		</div>
 

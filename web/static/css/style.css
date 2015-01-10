@@ -128,7 +128,7 @@ This is the parent `<div>` that contains the menu and the content area.
 	border: 2px solid;
 }
 
-#jobs select {
+#jobs .jobselect {
 	background: #191818;
 	width: 80%;
 	border: 2px solid;
