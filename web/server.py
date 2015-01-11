@@ -13,9 +13,12 @@ relay_server = "127.0.0.1"
 relay_port = 444
 teams = []   # [team, ips]
 sessions = {}
-connects = [] # [time, ip]
+jobs = [] # [job]
+connects = [] # [ip]
 hackers = [] # [hacker, ip]
-hacker_colors = ('#86b460', '#c6b955', '#3c8d88', '#a76443', '#5273aa', '#973291', '#bf5b5b', '#7dad13', '#066d9b', '#104a3e', '#798c2a')
+hacker_colors = ('#86b460', '#c6b955', '#3c8d88', '#a76443', '#5273aa', 
+                 '#973291', '#bf5b5b', '#7dad13', '#066d9b', '#104a3e', 
+                 '#798c2a')
 
 app = Flask(__name__)
 app.debug = True
@@ -41,7 +44,7 @@ def push_data():
                 s.send(cmd)
             cmd_queue = []
 
-        s.recv(1024) # Don't care about cmd or init output
+        s.recv(1024) # Throw away initial output
         s.send("show relay")
         relay = s.recv(1024).replace("\n> ", "")[:-1]
         s.send("show")
@@ -57,26 +60,29 @@ def push_data():
                 for i, _ in enumerate(teams):
                     for a, ip in enumerate(teams[i][1]):
                         if host in teams[i][1][a]:
-                            teams[i][1][a] = [ip[0], h, color] #Assign hacker color to hosts owned
+                            teams[i][1][a] = [ip[0], h, color] # Assign hacker color to hosts owned
 
-        tdata = {}
+        tdata = {} # Build team color data
         for team, ips in teams:
             for ip, hacker, color in ips:
                 tdata[ip] = color
 
-        rdata = {}
+        rdata = {} # Build relay data
         for line in relay.split('\n'):
             if line:
                 host, target, port = line.replace(' > ', ':').split(':')
                 rdata[host] = target + "," + port
 
-        cdata = []
+        cdata = [] # Build call in data
         line = conns.split('\n')[-1]
         if line != "No Connections":
             cdata.append(line)
-            date, ip = line.split(',')
-            connects.append([date, ip]) # Global varible for connections
+            ip, date = line.split(',')
+            connects.append(ip) # Global varible for connections
 
+        jobs = list(os.walk('../jobs'))[0][2] # Refresh jobs list
+
+        # Emit our data if it's new
         if prev_tdata != tdata:
             socketio.emit('team_data', tdata, namespace='/sessions') 
             prev_tdata = dict(tdata)
@@ -126,7 +132,7 @@ def index():
         sess_thread.start()
         print "STARTED THREAD"
 
-    return render_template('index.html', teams=teams, hackers=hackers, conns=connects)
+    return render_template('index.html', teams=teams, hackers=hackers, conns=list(set(connects)), jobs=jobs)
 
 @app.route('/js/<path:path>')
 def servejs(path):
@@ -146,6 +152,18 @@ def add_hacker(msg):
 @socketio.on('add_relay', namespace='/sessions')
 def add_relay(msg):
     cmd_queue.append("add " + msg['host'] + " " + msg['target'] + " " + msg['port'])
+
+@socketio.on('get_job', namespace='/sessions')
+def get_job(msg):
+    fd = open('../jobs/' + msg['job'].lower(), 'r')
+    emit("job_data", {msg['job'].lower(): "".join(fd.readlines())})
+    fd.close()
+
+@socketio.on('new_job', namespace='/sessions')
+def new_job(msg):
+    fd = open('../jobs/' + msg['job'], 'w+')
+    fd.write(msg['data'])
+    fd.close()
 
 @socketio.on('shell_cmd', namespace='/sessions')
 def shell_cmd(msg):
@@ -170,6 +188,8 @@ if __name__ == '__main__':
     for i,_ in enumerate(teams): 
         for a, ip in enumerate(teams[i][1]):
             teams[i][1][a] = [ip, "None", None] # Setup hacker/target array
+
+    jobs = list(os.walk('../jobs'))[0][2]
     
     main_thread = Thread(target=push_data)
     main_thread.start()

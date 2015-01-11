@@ -110,7 +110,7 @@ This is the parent `<div>` that contains the menu and the content area.
 	transform-origin: 100% 0%;
 }
 
-#connlist {
+.datalist {
 	border: 2px solid;
 	border-radius: 20px;
 	background: #191818;

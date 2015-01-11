@@ -16,6 +16,7 @@ $(document).ready(function() {
 		$('.invisible').hide(); 
 
 		$("#connlist").niceScroll({cursorcolor:"#00F"}).hide(); 
+		$("#joblist").niceScroll({cursorcolor:"#00F"}).hide(); 
 		$("#teamgrid").niceScroll({cursorcolor:"#00F"}).hide(); 
 
 		var socket = io.connect('http://' + document.domain + ':' + location.port + '/sessions'); 
@@ -102,7 +103,13 @@ $(document).ready(function() {
 				$(".datalist").append("<p><" + d[1] + "> " + d[0]);
 			}
 		});
-		
+
+		socket.on('job_data', function(data) {
+			for (var key in data) {
+				$("#jobs textarea").val(data[key]);
+			}
+		});
+
 		$("#hackerform").submit(function() {
 			socket.emit('add_hacker', {hacker: $("#hacker").val(), ip: $("#hackerip").val()});
 		});
@@ -114,9 +121,50 @@ $(document).ready(function() {
 			// Add busy screen
 		});
 
+		$("jobform").submit(function() {});
+
 		$("#connlist").click(function() {
 			$("#connlist").empty();
 		});
+
+		$("#selectjob").click(function() {
+			if ($(this).val() == "addnewjob") {
+				$("#jobs textarea").val("");
+				$("#jobs input").removeAttr('disabled');
+			}
+			else {
+				socket.emit('get_job', {job: $(this).val()});	
+			}
+			return false;
+		});
+
+		$("#newjobButton").click(function() {
+			if ($("#jobs textarea").val() != "") {
+				var newjob = $("#jobs input").val();
+				socket.emit('new_job', {job: newjob,
+										data: $("#jobs textarea").val()});
+
+				$("#selectjob option:last-child").remove();
+				$("#selectjob").append('<option value="' + newjob + '">' + newjob + '</option>');
+				$("#selectjob").append('<option value="addnewjob">Add new job...</option>');
+
+				$("#newjob").val("");
+				$("#newjobButton").addClass("pure-button-disabled");
+				$("#newjobButton").removeClass("pure-button-primary");
+				$("#newjob").attr('disabled', 'disabled');
+			}
+
+			else {
+				alert("Put something in the text area, dummy.");
+			}
+			return false;
+		});
+
+		$("#newjob").keypress(function() {
+			$("#newjobButton").removeClass("pure-button-disabled");
+			$("#newjobButton").addClass("pure-button-primary");
+		});
+			
 
 		hideAll = function() {
 			$("div.menuitem").hide();
@@ -133,6 +181,8 @@ $(document).ready(function() {
 				$("#" + item).show();
 			});
 		});
+
+		$("#selectjob").append('<option value="addnewjob">Add new job...</option>');
 });
 </script>
 
@@ -212,7 +262,7 @@ $(document).ready(function() {
 						<label for="host">Infected IP</label>
 						<input id="rhost" list="h_ip">
 						<datalist id="h_ip">
-							{% for target, date in conns %}
+							{% for target in conns %}
 							<option value="{{target}}">
 							{% endfor %}
 						</datalist>
@@ -240,7 +290,11 @@ $(document).ready(function() {
 		<div id="jobs" class="invisible menuitem pure-g">
 			<div class="pure-u-1-2 l-box">
 				<div style="float: left; width: 60%;">
-					<select id="selectjob" size="10" class="jobselect"></select>
+					<select id="selectjob" size="10" class="jobselect">
+						{% for job in jobs %}
+						<option value="{{job}}">{{job}}</option>
+						{% endfor %}
+					</select>
 				</div>
 				<div>
 					<button class="pure-button">Edit Job</button>
@@ -249,11 +303,11 @@ $(document).ready(function() {
 				<div class="l-box">
 					<input id="newjob" placeholder="New Job Name" disabled>
 				</div>
-				<form class="pure-form">
+				<form id="addjob" class="pure-form">
 					<fieldset>
-						<select id="jobhost" placeholder="Target" style="width: 50%;">
-							{% for target, date in conns %}
-							<option value="{{target}}">
+						<select id="jobhost" placeholder="Target" style="width: 60%;">
+							{% for target in conns %}
+							<option value="{{target}}">{{target}}</option>
 							{% endfor %}
 						</select>
 						<button type="submit" class="pure-button pure-button-disabled">Add Job</button>
@@ -262,7 +316,7 @@ $(document).ready(function() {
 				<textarea cols="75" rows="33"></textarea>
 			</div>
 			<div class="pure-u-1-2 l-box">
-				<div id="connlist" class="datalist"></div>
+				<div id="joblist" class="datalist"></div>
 			</div>
 		</div>
 
