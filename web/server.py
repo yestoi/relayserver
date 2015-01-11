@@ -165,6 +165,10 @@ def new_job(msg):
     fd.write(msg['data'])
     fd.close()
 
+@socketio.on('add_job', namespace='/sessions')
+def add_job(msg):
+    cmd_queue.append("add job " + msg['host'] + " " + msg['job'])
+
 @socketio.on('shell_cmd', namespace='/sessions')
 def shell_cmd(msg):
     session = re.sub(r'(?<!-)-(?!-)', ".", msg['session'])

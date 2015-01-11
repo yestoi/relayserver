@@ -134,6 +134,12 @@ This is the parent `<div>` that contains the menu and the content area.
 	border: 2px solid;
 }
 
+#chatframe {
+	height: 800px;
+	width: 100%;
+	position: relative;
+}
+
 .hackers {
 	position: relative;
 	width: 80%;
