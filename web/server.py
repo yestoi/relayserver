@@ -34,6 +34,7 @@ def push_data():
     prev_cdata = []
     init_loop = 2
     global cmd_queue
+    global jobs
 
     while True:
         s = socket.socket()
