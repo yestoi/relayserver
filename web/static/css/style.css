@@ -54,14 +54,48 @@ This is the parent `<div>` that contains the menu and the content area.
 	padding: 5px 5px;
 }
 
-#sessions, #teams { 
-	background: #232B24;
+#teams {
+    padding: 1em 1em 0;
 }
 
 #teamgrid {
 	overflow: auto;
 	height: 900px;
 	font-size: 80%;
+}
+
+#teams ul {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+#teams li {
+	padding-left: 1em;
+	text-indent: -.7em;
+}
+
+#teams li:before {
+	content: "\002022";
+	color: grey;
+}
+
+#teams .active li:before {
+	content: "\002022";
+	color: green;
+}
+
+#teams .dead li:before {
+	content: "\002022 ";
+	color: red;
+}
+
+.hackers {
+	position: relative;
+	width: 80%;
+	text-align: center;
+	line-height: 30px;
+	font-size: 250%;
 }
 
 #sessgrid {
@@ -97,10 +131,6 @@ This is the parent `<div>` that contains the menu and the content area.
 	margin-left: 5px;
 }
 
-#teams {
-	/*padding-left: 2em;*/
-    padding: 1em 1em 0;
-}
 
 #sessgrid div:nth-child(4n+4) {
 	transform-origin: 100% 0%;
@@ -108,6 +138,24 @@ This is the parent `<div>` that contains the menu and the content area.
 
 #sessgrid div:nth-child(4n-1) {
 	transform-origin: 100% 0%;
+}
+
+prompt input {
+	background: transparent;
+	border: none;
+	color: green;
+	margin-left: 7px;
+	font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono
+}
+
+prompt {
+	padding-left: 5px;
+}
+
+prompt:before {
+	content: ">";
+	left: 2px;
+	position: relative;
 }
 
 .datalist {
@@ -137,32 +185,6 @@ This is the parent `<div>` that contains the menu and the content area.
 #chatframe {
 	height: 800px;
 	width: 100%;
-	position: relative;
-}
-
-.hackers {
-	position: relative;
-	width: 80%;
-	text-align: center;
-	line-height: 30px;
-	font-size: 250%;
-}
-
-prompt input {
-	background: transparent;
-	border: none;
-	color: green;
-	margin-left: 7px;
-	font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono
-}
-
-prompt {
-	padding-left: 5px;
-}
-
-prompt:before {
-	content: ">";
-	left: 2px;
 	position: relative;
 }
 

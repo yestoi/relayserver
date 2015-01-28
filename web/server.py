@@ -75,11 +75,13 @@ def push_data():
                 rdata[host] = target + "," + port
 
         cdata = [] # Build call in data
-        line = conns.split('\n')[-1]
-        if line != "No Connections":
-            cdata.append(line)
-            ip, date = line.split(',')
-            connects.append(ip) # Global varible for connections
+        lastline = conns.split('\n')[-1]
+        if lastline != "No Connections":
+            connects = []
+            for conn in conns.split('\n'):
+                cdata.append(conn)
+                ip, date = conn.split(',')
+                connects.append(ip) # Global varible for connections
 
         jobs = list(os.walk('../jobs'))[0][2] # Refresh jobs list
 
@@ -96,8 +98,10 @@ def push_data():
                 init_loop -= 1
 
         if prev_cdata != cdata:
-            socketio.emit('conn_data', cdata, namespace='/sessions')
+            new_cdata = [j for i,j in zip(prev_cdata, cdata) if i != j]
+            socketio.emit('conn_data', new_cdata, namespace='/sessions')
             prev_cdata = list(cdata)
+            print new_cdata
 
         time.sleep(5)
 

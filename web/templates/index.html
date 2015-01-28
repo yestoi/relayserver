@@ -15,8 +15,8 @@
 $(document).ready(function() {
 		$('.invisible').hide(); 
 
-		$("#connlist").niceScroll({cursorcolor:"#00F"}).hide(); 
-		$("#joblist").niceScroll({cursorcolor:"#00F"}).hide(); 
+		$("#connlist").niceScroll({cursorcolor:"#232B24", autohidemode: true, cursorborder: 'none'})
+		$("#joblist").niceScroll({cursorcolor:"#232B24"})
 		$("#teamgrid").niceScroll({cursorcolor:"#00F"}).hide(); 
 
 		var socket = io.connect('http://' + document.domain + ':' + location.port + '/sessions'); 
@@ -76,7 +76,20 @@ $(document).ready(function() {
 				html += " - " + d[0] + "</span></p>";
 				$(".hackers").append(html);	
 			}
+			$(".hackers p").each(function() {
+				$(this).dblclick(function() {
+					$(this).remove()
+				});
+			});
 		});
+
+		$(".hackers p").each(function() {
+			$(this).dblclick(function() {
+				$(this).remove()
+				// TODO: Socket call to remove hacker
+			});
+		});
+
 
 		socket.on('team_data', function(data) {
 			for (var key in data) {
@@ -113,6 +126,8 @@ $(document).ready(function() {
 
 		$("#hackerform").submit(function() {
 			socket.emit('add_hacker', {hacker: $("#hacker").val(), ip: $("#hackerip").val()});
+			$("hacker").val("");
+			$("hackerip").val("");
 		});
 
 		$("#relayform").submit(function() {
@@ -125,10 +140,6 @@ $(document).ready(function() {
 		$("jobform").submit(function() {
 			socket.emit('add_job', {job: $("#selectjob").val(),
 									host: $("#jobhost").val()});
-		});
-
-		$("#connlist").click(function() {
-			$("#connlist").empty();
 		});
 
 		$("#selectjob").click(function() {
@@ -314,6 +325,7 @@ $(document).ready(function() {
 				</div>
 				<div class="l-box">
 					<input id="newjob" placeholder="New Job Name" disabled>
+					<!-- TODO: Allow submitting a user entered IP for a job -->
 				</div>
 				<form id="addjob" class="pure-form">
 					<fieldset>
@@ -333,9 +345,10 @@ $(document).ready(function() {
 		</div>
 
 		<div id="chat" class="invisible menuitem" style="position:relative">
-			<div id="chatframe">
+			<div id="chatframe" class="l-box">
 				<!-- TODO: Fix height issue -->
-				<iframe src="https://kiwiirc.com/client/irc.freenode.org/?nick=redteam|?&theme=cli#mwccdc" style="border:0; position:relative; width:100%; height: 100%;"></iframe>
+				<!--
+		<iframe src="https://kiwiirc.com/client/irc.freenode.org/?nick=redteam|?&theme=cli#mwccdc" style="border:0; position:relative; width:100%; height: 100%;"></iframe> -->
 			</div>
 		</div>
 

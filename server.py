@@ -158,7 +158,7 @@ class Control(recvline.HistoricRecvLine):
                         self.terminal.write(host + " > " + target + ":" + port + "\n")
             else:
                 if listener.hosts:
-                    for host, date in listener.hosts:
+                    for host, date in sorted(listener.hosts, key=lambda x: x[0]):
                         self.terminal.write(str(host) + "," + date.strftime("%I:%M%p") + "\n")
                 else:
                     self.terminal.write("No Connections\n")
