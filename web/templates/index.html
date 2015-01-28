@@ -25,7 +25,7 @@ $(document).ready(function() {
 		socket.on('session_data', function(data) {
 		for (var key in data) {
 			if (data.hasOwnProperty(key)) {
-				var keyid = key.replace(/\./g, "-");
+				var keyid = key.replace(/\.|:/g, "-");
 				var title = key.replace("--", " -> ");
 
 				if ($.inArray(keyid, sess) <= -1) {

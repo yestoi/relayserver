@@ -38,7 +38,7 @@ class Listener(LineReceiver):
                     cmd = [NETCAT, target, port]
                     cwd = '/tmp'
 
-                    self.nc = ProcessProtocol(self, [host, target])
+                    self.nc = ProcessProtocol(self, [host, target, port])
                     reactor.spawnProcess(self.nc, cmd[0], cmd, {}, cwd)
                     self.conn.append([host, target, port, self.nc])
 
@@ -102,8 +102,8 @@ class ProcessProtocol(protocol.ProcessProtocol):
 
     def __init__(self, nc, conn):
         self.nc = nc
-        host, target = conn
-        self.log = open(os.getcwd() + "/sessions/" + host + "--" + target, "a") #TODO: Handle exception
+        host, target, port = conn
+        self.log = open(os.getcwd() + "/sessions/" + host + "--" + target + ":" + port, "a") #TODO: Handle exception
 
     def outReceived(self, data):
         self.nc.transport.write(data)
@@ -199,6 +199,7 @@ class Control(recvline.HistoricRecvLine):
 
         elif cmd == "tap":
             host, target = line.split()[1].split("--")
+            target = re.sub(':[0-9]+$', '', target)
             data = " ".join(line.split()[2:])
 
             for h, t, p, nc in listener.conn:

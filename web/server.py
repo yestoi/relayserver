@@ -55,6 +55,7 @@ def push_data():
 
         for key in sessions.keys(): 
             host, target = key.split("--")
+            target = re.sub(':[0-9]+$', '', target)
             hacker = [s for s in hackers if target in s]
             if hacker:
                 h, hacker_ip, color = hacker[0]
@@ -177,6 +178,7 @@ def add_job(msg):
 @socketio.on('shell_cmd', namespace='/sessions')
 def shell_cmd(msg):
     session = re.sub(r'(?<!-)-(?!-)', ".", msg['session'])
+    session = session[0:session.rfind(".")] + ":" + session[session.rfind(".")+1:]
     s = socket.socket()
     s.connect((relay_server, relay_port))
     s.sendall("tap " + session + " " + msg['cmd'])
