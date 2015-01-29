@@ -140,8 +140,9 @@ $(document).ready(function() {
 		});
 				
 		$("#teamgrid").dblclick(function() {
-			$("#teamgrid li").each(function() { $(this).css({color: "#777"}); });
-			socket.emit('refresh_teams', {"test":"this"});
+			// TODO: Prompt with warning instead. 
+			//$("#teamgrid li").each(function() { $(this).css({color: "#777"}); });
+			//socket.emit('refresh_teams', {"test":"this"});
 		});
 
 		$("#relayform").submit(function() {
