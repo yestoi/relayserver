@@ -22,7 +22,7 @@ $(document).ready(function() {
 		var socket = io.connect('http://' + document.domain + ':' + location.port + '/sessions'); 
 		var sess = [];
 		var tap = false;
-		var selected_hacker = '#777';
+		var selected_hacker = ['#777', ''];
 
 		socket.on('session_data', function(data) {
 		for (var key in data) {
@@ -135,7 +135,12 @@ $(document).ready(function() {
 
 		$("#teamgrid li").each(function() {
 			$(this).click(function() {
+				socket.emit('add_tag', {color: selected_hacker, ip: $(this).text()});
 				$(this).css({color: selected_hacker});
+			});
+			$(this).dblclick(function() {
+				$(this).css({color: "#777"});
+				socket.emit('rm_tag', {color: $(this).css("color"), ip: $(this).text()});
 			});
 		});
 				
@@ -228,7 +233,6 @@ $(document).ready(function() {
 				selected_hacker = $(this).find("strong").css("color");
 			});
 		});
-
 
 		$("#selectjob").append('<option value="addnewjob">Add new job...</option>');
 });

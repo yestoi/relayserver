@@ -188,6 +188,24 @@ def del_hacker(msg):
 def refresh_teams(msg):
     socketio.emit('team_data', tdata, namespace='/sessions') 
 
+@socketio.on('add_tag', namespace='/sessions')
+def tag_ip(msg):
+    for i, _ in enumerate(teams):
+        for a, record in enumerate(teams[i][1]):
+            if msg['ip'] in record:
+                teams[i][1][a] = [record[0], None, msg['color']]
+
+    socketio.emit('team_data', tdata, namespace='/sessions')
+
+@socketio.on('rm_tag', namespace='/sessions')
+def rm_tag(msg):
+    for i, _ in enumerate(teams):
+        for a, record in enumerate(teams[i][1]):
+            if msg['ip'] in record:
+                teams[i][1][a] = [record[0], None, "#777"]
+
+    socketio.emit('team_data', tdata, namespace='/sessions')
+
 @socketio.on('add_relay', namespace='/sessions')
 def add_relay(msg):
     cmd_queue.append("add " + msg['host'] + " " + msg['target'] + " " + msg['port'])
