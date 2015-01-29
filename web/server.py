@@ -12,6 +12,7 @@ cmd_queue = []
 relay_server = "127.0.0.1"
 relay_port = 444
 teams = []   # [team, ips]
+tdata = {}
 sessions = {}
 jobs = [] # [job]
 connects = [] # [ip]
@@ -36,6 +37,7 @@ def push_data():
     global cmd_queue
     global jobs
     global connects
+    global tdata
 
     while True: # Push data every 5 seconds
         s = socket.socket()
@@ -65,7 +67,6 @@ def push_data():
                         if host in teams[i][1][a]:
                             teams[i][1][a] = [ip[0], h, color] # Assign hacker color to hosts owned
 
-
         tdata = {} # Build team color data
         for team, ips in teams:
             for ip, hacker, color in ips:
@@ -89,9 +90,9 @@ def push_data():
         jobs = list(os.walk('../jobs'))[0][2] # Refresh jobs list
 
         # Emit our data if it's new
-        #if prev_tdata != tdata:
-        socketio.emit('team_data', tdata, namespace='/sessions') 
-        prev_tdata = dict(tdata)
+        if prev_tdata != tdata or init_loop > 0:
+            socketio.emit('team_data', tdata, namespace='/sessions') 
+            prev_tdata = dict(tdata)
 
         if prev_rdata != rdata or init_loop > 0:
             socketio.emit('relay_data', rdata, namespace='/sessions') 
@@ -182,6 +183,10 @@ def del_hacker(msg):
         (host, ip, color) = hacker
         data[host] = ip + "," + color
     emit("hacker_data", data, broadcast=True)
+
+@socketio.on('refresh_teams', namespace='/sessions')
+def refresh_teams(msg):
+    socketio.emit('team_data', tdata, namespace='/sessions') 
 
 @socketio.on('add_relay', namespace='/sessions')
 def add_relay(msg):

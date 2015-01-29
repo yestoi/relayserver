@@ -22,7 +22,7 @@ $(document).ready(function() {
 		var socket = io.connect('http://' + document.domain + ':' + location.port + '/sessions'); 
 		var sess = [];
 		var tap = false;
-		var selected_hacker = '';
+		var selected_hacker = '#777';
 
 		socket.on('session_data', function(data) {
 		for (var key in data) {
@@ -88,7 +88,7 @@ $(document).ready(function() {
 					socket.emit('del_hacker', {hacker: name, ip: h_ip});
 				});
 				$(this).click(function() {
-					selected_hacker = this;
+					selected_hacker = $(this).find("strong").css("color");
 				});
 			});
 
@@ -131,6 +131,17 @@ $(document).ready(function() {
 			socket.emit('add_hacker', {hacker: $("#hacker").val(), ip: $("#hackerip").val()});
 			$("#hacker").val("");
 			$("#hackerip").val("");
+		});
+
+		$("#teamgrid li").each(function() {
+			$(this).click(function() {
+				$(this).css({color: selected_hacker});
+			});
+		});
+				
+		$("#teamgrid").dblclick(function() {
+			$("#teamgrid li").each(function() { $(this).css({color: "#777"}); });
+			socket.emit('refresh_teams', {"test":"this"});
 		});
 
 		$("#relayform").submit(function() {
@@ -213,7 +224,7 @@ $(document).ready(function() {
 				socket.emit('del_hacker', {hacker: name, ip: h_ip});
 			});
 			$(this).click(function() {
-				selected_hacker = this;
+				selected_hacker = $(this).find("strong").css("color");
 			});
 		});
 
