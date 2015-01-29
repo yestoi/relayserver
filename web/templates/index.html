@@ -15,13 +15,15 @@
 $(document).ready(function() {
 		$('.invisible').hide(); 
 
-		$("#connlist").niceScroll({cursorcolor:"#232B24", autohidemode: true, cursorborder: 'none'})
-		$("#joblist").niceScroll({cursorcolor:"#232B24"})
+		$("#connlist").niceScroll({cursorcolor:"#232B24"});
+		$("#joblist").niceScroll({cursorcolor:"#232B24"});
 		$("#teamgrid").niceScroll({cursorcolor:"#00F"}).hide(); 
 
 		var socket = io.connect('http://' + document.domain + ':' + location.port + '/sessions'); 
 		var sess = [];
 		var tap = false;
+		var selected_hacker = '';
+
 		socket.on('session_data', function(data) {
 		for (var key in data) {
 			if (data.hasOwnProperty(key)) {
@@ -69,6 +71,7 @@ $(document).ready(function() {
 		}});
 
 		socket.on('hacker_data', function(data) {
+			$(".hackers").empty();
 			for (var key in data) {
 				var d = data[key].split(",");
 				var html = "<p><strong style=\"color:" + d[1] + "\">";
@@ -76,20 +79,20 @@ $(document).ready(function() {
 				html += " - " + d[0] + "</span></p>";
 				$(".hackers").append(html);	
 			}
+
 			$(".hackers p").each(function() {
 				$(this).dblclick(function() {
-					$(this).remove()
+					$(this).remove();
+					var name = $(this).text().split(" - ")[0];
+					var h_ip = $(this).text().split(" - ")[1];
+					socket.emit('del_hacker', {hacker: name, ip: h_ip});
+				});
+				$(this).click(function() {
+					selected_hacker = this;
 				});
 			});
-		});
 
-		$(".hackers p").each(function() {
-			$(this).dblclick(function() {
-				$(this).remove()
-				// TODO: Socket call to remove hacker
-			});
 		});
-
 
 		socket.on('team_data', function(data) {
 			for (var key in data) {
@@ -126,8 +129,8 @@ $(document).ready(function() {
 
 		$("#hackerform").submit(function() {
 			socket.emit('add_hacker', {hacker: $("#hacker").val(), ip: $("#hackerip").val()});
-			$("hacker").val("");
-			$("hackerip").val("");
+			$("#hacker").val("");
+			$("#hackerip").val("");
 		});
 
 		$("#relayform").submit(function() {
@@ -201,6 +204,19 @@ $(document).ready(function() {
 				$("#" + item).show();
 			});
 		});
+
+		$(".hackers p").each(function() {
+			$(this).dblclick(function() {
+				$(this).remove();
+				var name = $(this).text().split(" - ")[0];
+				var h_ip = $(this).text().split(" - ")[1];
+				socket.emit('del_hacker', {hacker: name, ip: h_ip});
+			});
+			$(this).click(function() {
+				selected_hacker = this;
+			});
+		});
+
 
 		$("#selectjob").append('<option value="addnewjob">Add new job...</option>');
 });
@@ -290,7 +306,7 @@ $(document).ready(function() {
 						<label for="target">Listener IP</label>
 						<input id="rtarget" list="t_ip">
 						<datalist id="t_ip">
-							{% for ip, hacker, color in ips %}
+							{% for hacker, ip, color in hackers %}
 							<option value="{{ip}}">
 							{% endfor %}
 						</datalist>

@@ -16,9 +16,9 @@ sessions = {}
 jobs = [] # [job]
 connects = [] # [ip]
 hackers = [] # [hacker, ip]
-hacker_colors = ('#86b460', '#c6b955', '#3c8d88', '#a76443', '#5273aa', 
+hacker_colors = ['#86b460', '#c6b955', '#3c8d88', '#a76443', '#5273aa', 
                  '#973291', '#bf5b5b', '#7dad13', '#066d9b', '#104a3e', 
-                 '#798c2a')
+                 '#798c2a']
 
 app = Flask(__name__)
 app.debug = True
@@ -35,8 +35,9 @@ def push_data():
     init_loop = 2
     global cmd_queue
     global jobs
+    global connects
 
-    while True:
+    while True: # Push data every 5 seconds
         s = socket.socket()
         s.connect((relay_server, relay_port))
 
@@ -64,6 +65,7 @@ def push_data():
                         if host in teams[i][1][a]:
                             teams[i][1][a] = [ip[0], h, color] # Assign hacker color to hosts owned
 
+
         tdata = {} # Build team color data
         for team, ips in teams:
             for ip, hacker, color in ips:
@@ -78,18 +80,18 @@ def push_data():
         cdata = [] # Build call in data
         lastline = conns.split('\n')[-1]
         if lastline != "No Connections":
-            connects = []
             for conn in conns.split('\n'):
                 cdata.append(conn)
                 ip, date = conn.split(',')
                 connects.append(ip) # Global varible for connections
+            connects = list(set(connects)) # Make sure list stays as small as possible
 
         jobs = list(os.walk('../jobs'))[0][2] # Refresh jobs list
 
         # Emit our data if it's new
-        if prev_tdata != tdata:
-            socketio.emit('team_data', tdata, namespace='/sessions') 
-            prev_tdata = dict(tdata)
+        #if prev_tdata != tdata:
+        socketio.emit('team_data', tdata, namespace='/sessions') 
+        prev_tdata = dict(tdata)
 
         if prev_rdata != rdata or init_loop > 0:
             socketio.emit('relay_data', rdata, namespace='/sessions') 
@@ -102,7 +104,6 @@ def push_data():
             new_cdata = [j for i,j in zip(prev_cdata, cdata) if i != j]
             socketio.emit('conn_data', new_cdata, namespace='/sessions')
             prev_cdata = list(cdata)
-            print new_cdata
 
         time.sleep(5)
 
@@ -138,7 +139,7 @@ def index():
         sess_thread.start()
         print "STARTED THREAD"
 
-    return render_template('index.html', teams=teams, hackers=hackers, conns=list(set(connects)), jobs=jobs)
+    return render_template('index.html', teams=teams, hackers=hackers, conns=connects, jobs=jobs)
 
 @app.route('/js/<path:path>')
 def servejs(path):
@@ -150,10 +151,37 @@ def servecss(path):
 
 # SocketIO Handlers
 
+hcount = 0 # Hacker Count
 @socketio.on('add_hacker', namespace='/sessions')
 def add_hacker(msg):
-    hackers.append([msg['hacker'], msg['ip'], hacker_colors[len(hackers)]])
-    emit("hacker_data", {hackers[-1][0]:hackers[-1][1] + "," +  hackers[-1][2]}, broadcast=True)
+    global hcount
+    hackers.append([msg['hacker'].strip(), msg['ip'], hacker_colors[hcount]])
+    hcount += 1
+
+    data = {}
+    for hacker in hackers:
+        (host, ip, color) = hacker
+        data[host] = ip + "," + color
+    emit("hacker_data", data, broadcast=True)
+
+@socketio.on('del_hacker', namespace='/sessions')
+def del_hacker(msg):
+    hacker = [s for s in hackers if msg['ip'] in s][0]
+    hcolor = hacker[2]
+    hackers.remove(hacker)
+
+    for i, _ in enumerate(teams): # Wipe hacker colors
+        for a, record in enumerate(teams[i][1]):
+            if hcolor in record:
+                teams[i][1][a] = [record[0], None, "#777"]
+
+    hacker_colors.append(hcolor) # Put retired color back on stack
+
+    data = {}
+    for hacker in hackers:
+        (host, ip, color) = hacker
+        data[host] = ip + "," + color
+    emit("hacker_data", data, broadcast=True)
 
 @socketio.on('add_relay', namespace='/sessions')
 def add_relay(msg):
@@ -198,7 +226,7 @@ if __name__ == '__main__':
 
     for i,_ in enumerate(teams): 
         for a, ip in enumerate(teams[i][1]):
-            teams[i][1][a] = [ip, "None", None] # Setup hacker/target array
+            teams[i][1][a] = [ip, None, "#777"] # Setup hacker/target array
 
     jobs = list(os.walk('../jobs'))[0][2]
     
