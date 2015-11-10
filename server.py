@@ -84,11 +84,11 @@ class Listener(LineReceiver):
                     if re.search(prompt, data): # Found prompt. Lets start sending our job over.
                         with open(os.getcwd() + "/jobs/" + filename) as jobfile:
                             for line in jobfile.readlines():
-                                obj.sendLine(line)
+                                self.sendLine(line)
                         print "Completed " + filename
-                        obj.transport.loseConnection()
+                        self.transport.loseConnection()
                         if count == 1:
-                            obj.jobs.remove(job)
+                            self.jobs.remove(job)
                         if count > 1:
                             job[3] -= 1
 
