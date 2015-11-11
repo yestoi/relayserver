@@ -5,7 +5,7 @@ from twisted.protocols.basic import LineReceiver
 from twisted.conch import recvline
 from twisted.internet import reactor, protocol, defer
 from os.path import isfile, join
-import pdb, datetime, re, os, stat
+import pdb, datetime, re, os, stat, time
 
 LISTEN_PORT = 443  # Your callbacks should be sent here
 COMMAND_PORT = 444 # Port to interact with server
@@ -84,8 +84,12 @@ class Listener(LineReceiver):
                     if re.search(prompt, data): # Found prompt. Lets start sending our job over.
                         with open(os.getcwd() + "/jobs/" + filename) as jobfile:
                             for line in jobfile.readlines():
-                                self.sendLine(line)
-                        print "Completed " + filename
+				if re.search(r'^gotosleep', line):
+					print "Sleeping.."
+					time.sleep(5)
+				else:
+					self.sendLine(line)
+                        print "Completed " + filename + " - " + shost
                         self.transport.loseConnection()
                         if count == 1:
                             self.jobs.remove(job)
@@ -180,17 +184,17 @@ class Control(recvline.HistoricRecvLine):
                 if len(line.split()) == 4:
                     host, job = line.split()[2:]
                     listener.jobs.append([host, job, PROMPT, 1]) 
-                    print "Added job"
+                    print "Added job - " + host
 
                 elif len(line.split()) == 5:
                     host, job, count = line.split()[2:]
-                    listener.jobs.append([host, job, PROMPT, count])
-                    print "Added job"
+                    listener.jobs.append([host, job, PROMPT, int(count)])
+                    print "Added job - " + host
 
                 elif len(line.split()) == 6:
                     host, job, count, prompt = line.split()[2:]
-                    listener.jobs.append([host, job, prompt, count])
-                    print "Added job"
+                    listener.jobs.append([host, job, prompt, int(count)])
+                    print "Added job - " + host
 
                 else:
                     self.terminal.write("Wtf?\n")
