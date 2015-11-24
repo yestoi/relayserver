@@ -5,12 +5,17 @@ from twisted.protocols.basic import LineReceiver
 from twisted.conch import recvline
 from twisted.internet import reactor, protocol, defer
 from os.path import isfile, join
+from threading import Thread
 import pdb, datetime, re, os, stat, time
 
 LISTEN_PORT = 443  # Your callbacks should be sent here
 COMMAND_PORT = 444 # Port to interact with server
 NETCAT = '/bin/nc'
 PROMPT = r'# $' #default shell prompt
+
+def jobsleep(self):
+	time.sleep(5)
+	self.transport.loseConnection()
 
 class Listener(LineReceiver):
     def __init__(self, hosts, sched, conn, jobs):
@@ -20,7 +25,9 @@ class Listener(LineReceiver):
         self.jobs = jobs    # List of scheduled jobs     [host, job, prompt, count]
         self.nc = None
         self.job = None
-
+	self.jobsleep = None
+    
+    
     def connectionMade(self):
         host = self.transport.getPeer().host
         print "Connected: ", host
@@ -62,11 +69,10 @@ class Listener(LineReceiver):
                         if count > 1:
                             job[3] -= 1
 
-
-
         #Kill it if we got nothing for the callback
         if not self.job and not self.nc:
             self.transport.loseConnection()
+
 
     def dataReceived(self, data):
         if self.nc != None:
@@ -86,11 +92,16 @@ class Listener(LineReceiver):
                             for line in jobfile.readlines():
 				if re.search(r'^gotosleep', line):
 					print "Sleeping.."
-					time.sleep(5)
+					thread = Thread(target = jobsleep, args = (self, ))
+					thread.start()
+					self.jobsleep = 1
 				else:
 					self.sendLine(line)
                         print "Completed " + filename + " - " + shost
-                        self.transport.loseConnection()
+			if self.jobsleep == None:
+				self.transport.loseConnection()
+			else:
+				self.jobsleep = None
                         if count == 1:
                             self.jobs.remove(job)
                         if count > 1:
@@ -101,6 +112,7 @@ class Listener(LineReceiver):
         if self.nc != None:
             self.nc.transport.loseConnection()
             self.nc.log.close()
+
 
 class ProcessProtocol(protocol.ProcessProtocol):
 
@@ -194,7 +206,7 @@ class Control(recvline.HistoricRecvLine):
                 elif len(line.split()) == 6:
                     host, job, count, prompt = line.split()[2:]
                     listener.jobs.append([host, job, prompt, int(count)])
-                    print "Added job - " + host
+                    print "Added job (" + job + ") - " + host
 
                 else:
                     self.terminal.write("Wtf?\n")
